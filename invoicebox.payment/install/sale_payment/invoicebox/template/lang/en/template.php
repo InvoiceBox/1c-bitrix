@@ -1,4 +1,5 @@
 <?php
+
 $MESS["SALE_HPS_INVOICEBOX_TEMPL_TITLE"] 	= "You want to pay via <b>InvoiceBox </b>";
 $MESS["SALE_HPS_INVOICEBOX_TEMPL_ORDER"] 	= "Invoice №";
 $MESS["SALE_HPS_INVOICEBOX_TEMPL_TO_PAY"] 	= "Amount to be paid by invoice:";
