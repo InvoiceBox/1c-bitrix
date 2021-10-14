@@ -28,11 +28,13 @@ class invoicebox_payment extends CModule
 
     function InstallEvents()
     {
+        RegisterModuleDependences('sale', 'OnGetBusinessValueGroups', 'invoicebox.payment', 'CInvoicebox', 'getBusValueGroups');
         return true;
     }
 
     function UnInstallEvents()
     {
+        UnRegisterModuleDependences('sale', 'OnGetBusinessValueGroups', 'invoicebox.payment', 'CInvoicebox', 'getBusValueGroups');
         return true;
     }
 
