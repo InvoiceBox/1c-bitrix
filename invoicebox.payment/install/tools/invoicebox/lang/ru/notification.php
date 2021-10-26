@@ -1,9 +1,9 @@
 <?php
 
-$MESS['SALE_HPS_INVOICEBOX_NOT_NUMBER'] 	= 'Указанный номер заказа не найден в системе:';
-$MESS['SALE_HPS_INVOICEBOX_NOT_SIGN'] 	= 'Подпись запроса неверна';
-$MESS['SALE_HPS_INVOICEBOX_NOT_SUM'] 		= 'Сумма оплаты не совпадает с суммой заказа';
-$MESS['SALE_HPS_INVOICEBOX_NOT_DATA'] 	= 'Данные запроса не переданы';
+$MESS['SALE_HPS_INVOICEBOX_NOT_NUMBER'] = 'Указанный номер заказа не найден в системе:';
+$MESS['SALE_HPS_INVOICEBOX_NOT_SIGN'] = 'Подпись запроса неверна';
+$MESS['SALE_HPS_INVOICEBOX_NOT_SUM'] = 'Сумма оплаты не совпадает с суммой заказа';
+$MESS['SALE_HPS_INVOICEBOX_NOT_DATA'] = 'Данные запроса не переданы';
 
 $MESS['SALE_HPS_INVOICEBOX_LOG_FORBIDDEN_SERVER'] = 'обращение от неустановренного сервера';
 $MESS['SALE_HPS_INVOICEBOX_LOG_MODULE_IS_NOT_CONF'] = 'не настроен модуль invoicebox в системе';
@@ -18,7 +18,7 @@ $MESS['SALE_HPS_INVOICEBOX_LOG_ORDER_IS_PAY'] = 'заказ успешно оплачен';
 
 $MESS['U0430'] = 'а';
 $MESS['U0431'] = 'б';
-$MESS['U0432'] = 'в'; 
+$MESS['U0432'] = 'в';
 $MESS['U0433'] = 'г';
 $MESS['U0434'] = 'д';
 $MESS['U0435'] = 'е';
@@ -53,28 +53,28 @@ $MESS['U0410'] = 'А';
 $MESS['U0411'] = 'Б';
 $MESS['U0412'] = 'В';
 $MESS['U0413'] = 'Г';
-$MESS['U0414'] = 'Д'; 
+$MESS['U0414'] = 'Д';
 $MESS['U0415'] = 'Е';
 $MESS['U0401'] = 'Ё';
 $MESS['U0416'] = 'Ж';
 $MESS['U0417'] = 'З';
 $MESS['U0418'] = 'И';
 $MESS['U0419'] = 'Й';
-$MESS['U041A'] = 'К'; 
+$MESS['U041A'] = 'К';
 $MESS['U041B'] = 'Л';
 $MESS['U041C'] = 'М';
 $MESS['U041D'] = 'Н';
 $MESS['U041E'] = 'О';
 $MESS['U041F'] = 'П';
 $MESS['U0420'] = 'Р';
-$MESS['U0421'] = 'С'; 
+$MESS['U0421'] = 'С';
 $MESS['U0422'] = 'Т';
 $MESS['U0423'] = 'У';
 $MESS['U0424'] = 'Ф';
 $MESS['U0425'] = 'Х';
 $MESS['U0426'] = 'Ц';
 $MESS['U0427'] = 'Ч';
-$MESS['U0428'] = 'Ш'; 
+$MESS['U0428'] = 'Ш';
 $MESS['U0429'] = 'Щ';
 $MESS['U042A'] = 'Ъ';
 $MESS['U042B'] = 'Ы';
@@ -82,4 +82,3 @@ $MESS['U042C'] = 'Ь';
 $MESS['U042D'] = 'Э';
 $MESS['U042E'] = 'Ю';
 $MESS['U042F'] = 'Я';
-

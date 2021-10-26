@@ -1,9 +1,9 @@
 <?php
 
-$MESS['SALE_HPS_INVOICEBOX_NOT_NUMBER'] 	= 'Specified order number not found in the system:';
-$MESS['SALE_HPS_INVOICEBOX_NOT_SIGN'] 	= 'Request signature is invalid';
-$MESS['SALE_HPS_INVOICEBOX_NOT_SUM'] 		= 'Payment amount does not match the order amount';
-$MESS['SALE_HPS_INVOICEBOX_NOT_DATA'] 	= 'Request data not sent';
+$MESS['SALE_HPS_INVOICEBOX_NOT_NUMBER'] = 'Specified order number not found in the system:';
+$MESS['SALE_HPS_INVOICEBOX_NOT_SIGN'] = 'Request signature is invalid';
+$MESS['SALE_HPS_INVOICEBOX_NOT_SUM'] = 'Payment amount does not match the order amount';
+$MESS['SALE_HPS_INVOICEBOX_NOT_DATA'] = 'Request data not sent';
 
 $MESS['SALE_HPS_INVOICEBOX_LOG_FORBIDDEN_SERVER'] = 'request from an failed server';
 $MESS['SALE_HPS_INVOICEBOX_LOG_MODULE_IS_NOT_CONF'] = 'invoicebox module is not configured in the system';
