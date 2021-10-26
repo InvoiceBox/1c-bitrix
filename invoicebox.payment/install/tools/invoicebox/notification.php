@@ -37,7 +37,7 @@ if ($request->get('testMode') == 1 && !in_array($_SERVER['REMOTE_ADDR'], $legal_
                 [
                     'success' => Loc::getMessage('SALE_HPS_INVOICEBOX_LOG_MODULE_IS_TEST_SUCCESS')
                 ],
-                true
+                JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
             ),
         ]
     );
@@ -55,7 +55,7 @@ if (!in_array($_SERVER['REMOTE_ADDR'], $legal_ip)) {
                     'ip_server' => $_SERVER['REMOTE_ADDR'],
                     'error' => Loc::getMessage('SALE_HPS_INVOICEBOX_LOG_FORBIDDEN_SERVER')
                 ],
-                true
+                JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
             ),
         ]
     );
@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] != 'POST') {
                 [
                     'error' => Loc::getMessage('SALE_HPS_INVOICEBOX_LOG_MODULE_IS_ERROR_REQUEST_TYPE')
                 ],
-                true
+                JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
             ),
         ]
     );
@@ -102,7 +102,7 @@ if ($item !== false) {
                 [
                     'error' => Loc::getMessage('SALE_HPS_INVOICEBOX_LOG_MODULE_IS_NOT_CONF')
                 ],
-                true
+                JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
             ),
         ]
     );

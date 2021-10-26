@@ -19,24 +19,21 @@ Loc::loadMessages(__FILE__);
 
 $arAnswer = ['status' => 'error', 'code' => 'out_of_service'];
 
-if (CModule::IncludeModule("sale"))
-{
+if (CModule::IncludeModule("sale")) {
     $context = Application::getInstance()->getContext();
     $request = $context->getRequest();
-    
+
     $data = json_decode(file_get_contents('php://input'), true);
-    if (isset($data['merchantOrderId']) && \Bitrix\Sale\Order::getList(['filter' => ['ID' => $data['merchantOrderId']]])->fetch()) {
+    if (isset($data['merchantOrderId']) && \Bitrix\Sale\Order::getList(['filter' => ['ID' => $data['merchantOrderId']]]
+        )->fetch()) {
         $item = PaySystem\Manager::searchByRequest($request);
-        
-        if ($item !== false)
-        {
+
+        if ($item !== false) {
             $service = new PaySystem\Service($item);
 
-            if ($service instanceof PaySystem\Service)
-            {
+            if ($service instanceof PaySystem\Service) {
                 $result = $service->processRequest($request);
-                if (!$result->isSuccess())
-                {
+                if (!$result->isSuccess()) {
                     $arError = $result->getErrorMessages();
                     if (count($arError) > 0) {
                         $arAnswer['code'] = $arError[0];
@@ -45,11 +42,9 @@ if (CModule::IncludeModule("sale"))
                     $arAnswer = ['status' => 'success'];
                 }
             }
-        }
-        else
-        {
+        } else {
             $debugInfo = implode("\n", $request->toArray());
-            PaySystem\Logger::addDebugInfo('Pay system not found. Request: '.$debugInfo);
+            PaySystem\Logger::addDebugInfo('Pay system not found. Request: ' . $debugInfo);
         }
     } else {
         $arAnswer['code'] = 'order_not_found';
@@ -57,5 +52,5 @@ if (CModule::IncludeModule("sale"))
 }
 
 $APPLICATION->RestartBuffer();
-$APPLICATION->FinalActions(json_encode($arAnswer));
+$APPLICATION->FinalActions(json_encode($arAnswer,JSON_HEX_TAG | JSON_UNESCAPED_UNICODE));
 die();

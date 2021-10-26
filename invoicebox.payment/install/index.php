@@ -20,21 +20,33 @@ class invoicebox_payment extends CModule
         include(dirname(__FILE__) . "/version.php");
         $this->MODULE_VERSION = $arModuleVersion["VERSION"];
         $this->MODULE_VERSION_DATE = $arModuleVersion["VERSION_DATE"];
-        $this->MODULE_NAME = "InvoiceBox";
+        $this->MODULE_NAME = "Invoicebox";
         $this->MODULE_DESCRIPTION = Loc::getMessage('SALE_HPS_INVOICEBOX_MODUL_NAME');
-        $this->PARTNER_NAME = "InvoiceBox";
+        $this->PARTNER_NAME = "Invoicebox";
         $this->PARTNER_URI = "https://www.invoicebox.ru";
     }
 
     function InstallEvents()
     {
-        RegisterModuleDependences('sale', 'OnGetBusinessValueGroups', 'invoicebox.payment', 'CInvoicebox', 'getBusValueGroups');
+        RegisterModuleDependences(
+            'sale',
+            'OnGetBusinessValueGroups',
+            'invoicebox.payment',
+            'CInvoicebox',
+            'getBusValueGroups'
+        );
         return true;
     }
 
     function UnInstallEvents()
     {
-        UnRegisterModuleDependences('sale', 'OnGetBusinessValueGroups', 'invoicebox.payment', 'CInvoicebox', 'getBusValueGroups');
+        UnRegisterModuleDependences(
+            'sale',
+            'OnGetBusinessValueGroups',
+            'invoicebox.payment',
+            'CInvoicebox',
+            'getBusValueGroups'
+        );
         return true;
     }
 
@@ -147,4 +159,4 @@ class invoicebox_payment extends CModule
         UnRegisterModule(self::MODULE_ID);
         $this->UnInstallFiles();
     }
-};
+}

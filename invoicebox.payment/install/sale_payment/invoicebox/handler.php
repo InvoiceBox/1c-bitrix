@@ -25,7 +25,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     const URL_CREATE_ORDER = 'billing/api/order/order';
     const STATUS_CREATED = 'created';
     const STATUS_CANCELED = 'canceled';
-    
+
     const NOTIFICATION_ERROR_CODE = [
         'other' => 'out_of_service',
         'amount' => 'order_wrong_amount',
@@ -33,14 +33,14 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         'not_found' => 'order_not_found',
         'sign' => 'signature_error',
     ];
-    
+
     const NDS_NO = 'NONE';
     const NDS_0 = 'RUS_VAT0';
     const NDS_10 = 'RUS_VAT10';
     const NDS_20 = 'RUS_VAT20';
     const NDS_10_110 = 'RUS_VAT110';
     const NDS_20_120 = 'RUS_VAT120';
-    
+
     /**
      * @param Payment $payment
      * @param Request|null $request
@@ -55,7 +55,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 $this->getBusinessValue($payment, 'PAYMENT_SHOULD_PAY') .
                 $this->getBusinessValue($payment, 'PAYMENT_CURRENCY') .
                 $this->getBusinessValue($payment, 'INVOICEBOX_PARTICIPANT_APIKEY')
-            ); 
+            );
         }
 
         $extraParams = array();
@@ -69,20 +69,38 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 $extraParams["SIGNATURE_VALUE"] = $signatureValue;
                 $extraParams["INVOICEBOX_API_KEY"] = $this->getBusinessValue($payment, 'INVOICEBOX_PARTICIPANT_APIKEY');
                 $extraParams["URL"] = $this->getUrl($payment, 'pay');
-                $extraParams["INVOICEBOX_NOTIFY_URL"] = $this->getBusinessValue($payment, 'INVOICEBOX_RETURN_URL_NOTIFY_2');
+                $extraParams["INVOICEBOX_NOTIFY_URL"] = $this->getBusinessValue(
+                    $payment,
+                    'INVOICEBOX_RETURN_URL_NOTIFY_2'
+                );
                 break;
             case self::PAYMENT_VERSION_3:
-                $extraParams["INVOICEBOX_MERCHANT_ID"] = $this->getBusinessValue($payment, 'INVOICEBOX_PARTICIPANT_ID_V3');
+                $extraParams["INVOICEBOX_MERCHANT_ID"] = $this->getBusinessValue(
+                    $payment,
+                    'INVOICEBOX_PARTICIPANT_ID_V3'
+                );
                 $extraParams["URL"] = $this->getUrl($payment, 'pay_v3');
-                $extraParams["INVOICEBOX_VAT_RATE_BASKET"] = $this->getBusinessValue($payment, 'INVOICEBOX_VAT_RATE_BASKET');
-                $extraParams["INVOICEBOX_VAT_RATE_DELIVERY"] = $this->getBusinessValue($payment, 'INVOICEBOX_VAT_RATE_DELIVERY');
-                $extraParams["INVOICEBOX_NOTIFY_URL"] = $this->getBusinessValue($payment, 'INVOICEBOX_RETURN_URL_NOTIFY_3');
+                $extraParams["INVOICEBOX_VAT_RATE_BASKET"] = $this->getBusinessValue(
+                    $payment,
+                    'INVOICEBOX_VAT_RATE_BASKET'
+                );
+                $extraParams["INVOICEBOX_VAT_RATE_DELIVERY"] = $this->getBusinessValue(
+                    $payment,
+                    'INVOICEBOX_VAT_RATE_DELIVERY'
+                );
+                $extraParams["INVOICEBOX_NOTIFY_URL"] = $this->getBusinessValue(
+                    $payment,
+                    'INVOICEBOX_RETURN_URL_NOTIFY_3'
+                );
                 break;
         }
 
+        $extraParams["INVOICEBOX_TYPE_DELIVERY"] = $this->getBusinessValue($payment, 'INVOICEBOX_TYPE_DELIVERY');
+        $extraParams["INVOICEBOX_TYPE_BASKET"] = $this->getBusinessValue($payment, 'INVOICEBOX_TYPE_BASKET');
         $extraParams["INVOICEBOX_RETURN_URL"] = $this->getBusinessValue($payment, 'INVOICEBOX_RETURN_URL');
         $extraParams["INVOICEBOX_SUCCESS_URL"] = $this->getBusinessValue($payment, 'INVOICEBOX_RETURN_URL_SUCCESS');
         $extraParams["INVOICEBOX_CANCEL_URL"] = $this->getBusinessValue($payment, 'INVOICEBOX_RETURN_URL_CANCEL');
+
         $extraParams["BX_PAYSYSTEM_CODE"] = $payment->getPaymentSystemId();
         $paymentCollection = $payment->getCollection();
 
@@ -111,18 +129,23 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                     break;
             }
         }
-        
+
         //settings params
-        if($name = $this->getBusinessValue($payment, 'BUYER_PERSON_NAME'))
+        if ($name = $this->getBusinessValue($payment, 'BUYER_PERSON_NAME')) {
             $extraParams['BUYER_PERSON_NAME'] = $name;
-        if($email = $this->getBusinessValue($payment, 'BUYER_PERSON_EMAIL'))
+        }
+        if ($email = $this->getBusinessValue($payment, 'BUYER_PERSON_EMAIL')) {
             $extraParams['BUYER_PERSON_EMAIL'] = $email;
-        if($phone = $this->getBusinessValue($payment, 'BUYER_PERSON_PHONE'))
+        }
+        if ($phone = $this->getBusinessValue($payment, 'BUYER_PERSON_PHONE')) {
             $extraParams['BUYER_PERSON_PHONE'] = $phone;
-        if($inn = $this->getBusinessValue($payment, 'BUYER_PERSON_INN'))
+        }
+        if ($inn = $this->getBusinessValue($payment, 'BUYER_PERSON_INN')) {
             $extraParams['BUYER_PERSON_INN'] = $inn;
-        if($registrationAddress = $this->getBusinessValue($payment, 'BUYER_PERSON_REGISTR_ADDRESS'))
+        }
+        if ($registrationAddress = $this->getBusinessValue($payment, 'BUYER_PERSON_REGISTR_ADDRESS')) {
             $extraParams['BUYER_PERSON_ADDRESS'] = $registrationAddress;
+        }
         return $extraParams;
     }
 
@@ -167,20 +190,20 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         $extraParams = $this->getPreparedParams($payment, $request, $version);
         $extraParams["BASKET_ITEMS"] = $order->getBasket();
         $extraParams["DELIVERY_PRICE"] = $order->getDeliveryPrice();
-        
+
         $shipmentRes = \Bitrix\Sale\Shipment::getList(array(
-			'select' => array('ID', ),
-			'filter' => array(
-				'ORDER_ID' => $extraParams["ORDERID"]
-			),
-			'order' => array('ID' => 'DESC'),
-			'limit' => 1
-		))->fetch();
+                                                          'select' => array('ID',),
+                                                          'filter' => array(
+                                                              'ORDER_ID' => $extraParams["ORDERID"]
+                                                          ),
+                                                          'order' => array('ID' => 'DESC'),
+                                                          'limit' => 1
+                                                      ))->fetch();
         $shipmentCollection = $order->getShipmentCollection();
         $shipment = $shipmentCollection->getItemById($shipmentRes["ID"]);
         $extraParams["DELIVERY_NAME"] = $shipment->getDeliveryName() ?: '';
         $extraParams["DELIVERY_ID"] = 'delivery_' . $shipment->getDeliveryID() ?: '';
-        
+
         $this->setExtraParams($extraParams);
 
         switch ($version) {
@@ -192,205 +215,194 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 }
                 $result = $this->initiatePayInternal($payment, $request, $extraParams);
                 if (!$result->isSuccess()) {
-                    $error = 'Invoicebox v3: initiatePay order#'.$payment->getField('ORDER_ID').' :'.join('\n', $result->getErrorMessages());
+                    $error = 'Invoicebox v3: initiatePay order#' . $payment->getField('ORDER_ID') . ' :' . join(
+                            '\n',
+                            $result->getErrorMessages()
+                        );
                     PaySystem\Logger::addError($error);
                 }
                 return $result;
         }
-
     }
-    
+
     private function initiatePayInternal(Payment $payment, Request $request, $params)
-	{
-		$result = new PaySystem\ServiceResult();
+    {
+        $result = new PaySystem\ServiceResult();
 
-		$createResult = $this->createInvoicePayment($payment, $request, $params);
-		if (!$createResult->isSuccess())
-		{
-			$result->addErrors($createResult->getErrors());
-			return $result;
-		}
+        $createResult = $this->createInvoicePayment($payment, $request, $params);
+        if (!$createResult->isSuccess()) {
+            $result->addErrors($createResult->getErrors());
+            return $result;
+        }
 
-		$paymentData = $createResult->getData()['data'];
+        $paymentData = $createResult->getData()['data'];
 
-		if ($paymentData['status'] === static::STATUS_CANCELED)
-		{
-			return $result->addError(
-				new Error(
-					Loc::getMessage('INVOICEBOX_ERROR_PAYMENT_CANCELED')
-				)
-			);
-		}
+        if ($paymentData['status'] === static::STATUS_CANCELED) {
+            return $result->addError(
+                new Error(
+                    Loc::getMessage('INVOICEBOX_ERROR_PAYMENT_CANCELED')
+                )
+            );
+        }
 
-		$result->setPsData(array('PS_INVOICE_ID' => $paymentData['id']));
+        $result->setPsData(array('PS_INVOICE_ID' => $paymentData['id']));
 
-		$params = array(
-			'URL' => $paymentData['paymentUrl'],
-			'PAYMENT_CURRENCY' => $payment->getField('CURRENCY'),
-			'SUM' => PriceMaths::roundPrecision($payment->getSum()),
-		);
-		$this->setExtraParams($params);
+        $params = array(
+            'URL' => $paymentData['paymentUrl'],
+            'PAYMENT_CURRENCY' => $payment->getField('CURRENCY'),
+            'SUM' => PriceMaths::roundPrecision($payment->getSum()),
+        );
+        $this->setExtraParams($params);
 
-		$template = "template";
+        $template = "template";
 
-		$showTemplateResult = $this->showTemplate($payment, 'template_v3');
-		if ($showTemplateResult->isSuccess())
-		{
-			$result->setTemplate($showTemplateResult->getTemplate());
-		}
-		else
-		{
-			$result->addErrors($showTemplateResult->getErrors());
-		}
+        $showTemplateResult = $this->showTemplate($payment, 'template_v3');
+        if ($showTemplateResult->isSuccess()) {
+            $result->setTemplate($showTemplateResult->getTemplate());
+        } else {
+            $result->addErrors($showTemplateResult->getErrors());
+        }
 
-		return $result;
-	}
-    
+        return $result;
+    }
+
     /**
-	 * @param Payment $payment
-	 * @param Request $request
-	 * @return PaySystem\ServiceResult
-	 * @throws Main\ArgumentException
-	 * @throws Main\ArgumentNullException
-	 */
-	private function createInvoicePayment(Payment $payment, Request $request, $params)
-	{
-		$result = new PaySystem\ServiceResult();
+     * @param Payment $payment
+     * @param Request $request
+     * @return PaySystem\ServiceResult
+     * @throws Main\ArgumentException
+     * @throws Main\ArgumentNullException
+     */
+    private function createInvoicePayment(Payment $payment, Request $request, $params)
+    {
+        $result = new PaySystem\ServiceResult();
 
         $params['URL'] .= self::URL_CREATE_ORDER;
-        
-		$headers = $this->getHeaders($payment);
-        $body = $this->getBodyRequest($payment, array_merge($this->getParamsBusValue($payment), $params));
-	
-		$sendResult = $this->send($params['URL'], $headers, $body);
-        
-		if (!$sendResult->isSuccess())
-		{
-			$result->addErrors($sendResult->getErrors());
-			return $result;
-		}
 
-		$response = $sendResult->getData();
+        $headers = $this->getHeaders($payment);
+        $body = $this->getBodyRequest($payment, array_merge($this->getParamsBusValue($payment), $params));
+
+        $sendResult = $this->send($params['URL'], $headers, $body);
+
+        if (!$sendResult->isSuccess()) {
+            $result->addErrors($sendResult->getErrors());
+            return $result;
+        }
+
+        $response = $sendResult->getData();
         $result->setData($response);
 
-		return $result;
-	}
+        return $result;
+    }
 
     /**
-	 * @param $url
-	 * @param array $headers
-	 * @param array $params
-	 * @return PaySystem\ServiceResult
-	 * @throws Main\ArgumentException
-	 */
-	private function send($url, array $headers, array $params = array())
-	{
-		$result = new PaySystem\ServiceResult();
+     * @param $url
+     * @param array $headers
+     * @param array $params
+     * @return PaySystem\ServiceResult
+     * @throws Main\ArgumentException
+     */
+    private function send($url, array $headers, array $params = array())
+    {
+        $result = new PaySystem\ServiceResult();
 
-		$httpClient = new HttpClient();
-		foreach ($headers as $name => $value)
-		{
-			$httpClient->setHeader($name, $value);
-		}
-
-		$postData = null;
-		if ($params)
-		{
-			$postData = static::encode($params);
-		}
-
-        if (class_exists('Bitrix\Sale\PaySystem\Logger'))
-        {
-            PaySystem\Logger::addDebugInfo('InvoiceBox: request data: '.$postData);
+        $httpClient = new HttpClient();
+        foreach ($headers as $name => $value) {
+            $httpClient->setHeader($name, $value);
         }
 
-		$response = $httpClient->post($url, $postData);
+        $postData = null;
+        if ($params) {
+            $postData = static::encode($params);
+        }
 
-		$response = static::decode($response);
+        if (class_exists('Bitrix\Sale\PaySystem\Logger')) {
+            PaySystem\Logger::addDebugInfo('Invoicebox: request data: ' . $postData);
+        }
 
-		$httpStatus = $httpClient->getStatus();
+        $response = $httpClient->post($url, $postData);
 
-		if ($httpStatus >= 400 && isset($response['error']['code']))
-		{
-			$error = Loc::getMessage('INVOICEBOX_CODE_ERROR_'.$response['error']['code']);
-			if ($error) {
-				$result->addError(new Error($error));
-			} else {
-				$result->addError(new Error(Loc::getMessage('INVOICEBOX_ERROR')));
-			}
-		} elseif ($httpStatus == 200 && !empty($response['data']['paymentUrl']) && $response['data']['status'] == static::STATUS_CREATED) {
+        $response = static::decode($response);
+
+        $httpStatus = $httpClient->getStatus();
+
+        if ($httpStatus >= 400 && isset($response['error']['code'])) {
+            $error = Loc::getMessage('INVOICEBOX_CODE_ERROR_' . $response['error']['code']);
+            if ($error) {
+                $result->addError(new Error($error));
+            } else {
+                $result->addError(new Error(Loc::getMessage('INVOICEBOX_ERROR')));
+            }
+        } elseif ($httpStatus == 200 && !empty($response['data']['paymentUrl']) && $response['data']['status'] == static::STATUS_CREATED) {
             $result->setData($response);
+        } elseif (!empty($response['data']['status'])) {
+            $result->addError(new Error(Loc::getMessage('INVOICEBOX_CODE_ERROR_' . $response['data']['status'])));
         }
-        elseif (!empty($response['data']['status'])) {
-            $result->addError(new Error(Loc::getMessage('INVOICEBOX_CODE_ERROR_'.$response['data']['status'])));
+        if (class_exists('Bitrix\Sale\PaySystem\Logger')) {
+            PaySystem\Logger::addDebugInfo('Invoicebox: response data: ' . $response);
         }
-        if (class_exists('Bitrix\Sale\PaySystem\Logger'))
-		{
-            PaySystem\Logger::addDebugInfo('InvoiceBox: response data: '.$response);
-        }
-        
-		return $result;
-	}
-    
+
+        return $result;
+    }
+
     /**
-	 * @param array $data
-	 * @return mixed
-	 * @throws Main\ArgumentException
-	 */
-	private static function encode(array $data)
-	{
-        if(version_compare(phpversion(), '7.1', '>=')){
+     * @param array $data
+     * @return mixed
+     * @throws Main\ArgumentException
+     */
+    private static function encode(array $data)
+    {
+        if (version_compare(phpversion(), '7.1', '>=')) {
             ini_set('serialize_precision', -1);
         }
-		return Json::encode($data, JSON_UNESCAPED_UNICODE|JSON_INVALID_UTF8_IGNOR);
-	}
+        return Json::encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_IGNOR);
+    }
 
-	/**
-	 * @param string $data
-	 * @return mixed
-	 */
-	private static function decode($data)
-	{
-		try
-		{
-			return Json::decode($data);
-		}
-		catch (Main\ArgumentException $exception)
-		{
-			return false;
-		}
-	}
-    
     /**
-	 * @param Payment $payment
-	 * @return array
-	 */
-	private function getHeaders(Payment $payment)
-	{
-		$headers = [
-			'Content-Type' => 'application/json',
-			'Accept' => 'application/json',
+     * @param string $data
+     * @return mixed
+     */
+    private static function decode($data)
+    {
+        try {
+            return Json::decode($data);
+        } catch (Main\ArgumentException $exception) {
+            return false;
+        }
+    }
+
+    /**
+     * @param Payment $payment
+     * @return array
+     */
+    private function getHeaders(Payment $payment)
+    {
+        $headers = [
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+            // ToDo: add versions
+            'User-Agent' => 'Bitrix/X (Invoicebox 2.0.1)',
             'Authorization' => 'Bearer ' . $this->getBusinessValue($payment, 'INVOICEBOX_AUTH_TOKEN'),
-		];
+        ];
 
-		return $headers;
-	}
-    
+        return $headers;
+    }
+
     /**
-	 * @param array $params
-	 * @return array
-	 */
-	private function getBodyRequest(Payment $payment, array $params)
-	{
+     * @param array $params
+     * @return array
+     */
+    private function getBodyRequest(Payment $payment, array $params)
+    {
         $vatAmount = 0;
-		$body = [
-			'merchantId' => $params['INVOICEBOX_MERCHANT_ID'],
-			'merchantOrderId' => (string)$params['ORDERID'],
-			'amount' => (float)htmlspecialcharsbx(number_format($params['PAYMENT_SHOULD_PAY'], 2, '.', '')),
-			'successUrl' => htmlspecialcharsbx($params["INVOICEBOX_RETURN_URL_SUCCESS"]),
-			'failUrl' => htmlspecialcharsbx($params["INVOICEBOX_RETURN_URL_CANCEL"]),
-			'notificationUrl' => htmlspecialcharsbx($params["INVOICEBOX_NOTIFY_URL"]),
-			'returnUrl' => htmlspecialcharsbx($params["INVOICEBOX_RETURN_URL"]),
+        $body = [
+            'merchantId' => $params['INVOICEBOX_MERCHANT_ID'],
+            'merchantOrderId' => (string)$params['ORDERID'],
+            'amount' => (float)htmlspecialcharsbx(number_format($params['PAYMENT_SHOULD_PAY'], 2, '.', '')),
+            'successUrl' => htmlspecialcharsbx($params["INVOICEBOX_RETURN_URL_SUCCESS"]),
+            'failUrl' => htmlspecialcharsbx($params["INVOICEBOX_RETURN_URL_CANCEL"]),
+            'notificationUrl' => htmlspecialcharsbx($params["INVOICEBOX_NOTIFY_URL"]),
+            'returnUrl' => htmlspecialcharsbx($params["INVOICEBOX_RETURN_URL"]),
             "currencyId" => $params['PAYMENT_CURRENCY'],
             "description" => htmlspecialcharsbx($params['INVOICEBOX_ORDERDESCR'] . " (#" . $params['ORDERID'] . ")"),
             "expirationDate" => FormatDate("c", time() + (86400 * 7)),
@@ -402,16 +414,17 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 'vatNumber' => $params['BUYER_PERSON_INN'] ?? '',
                 'registrationAddress' => $params['BUYER_PERSON_REGISTR_ADDRESS'] ?? '',
             ],
-		];
-           
+        ];
+
         $index = 0;
         foreach ($params['BASKET_ITEMS'] as $basketItem) {
             $basketField = $basketItem->getFields();
-            
-            if ($params['INVOICEBOX_VAT_RATE_BASKET'] == 'SETTINGS_BASKET')
+
+            if ($params['INVOICEBOX_VAT_RATE_BASKET'] == 'SETTINGS_BASKET') {
                 $arDataWithNDS = self::getNDSData($basketItem, 'product');
-            else
+            } else {
                 $arDataWithNDS = self::calculateNDSData($basketItem, $params['INVOICEBOX_VAT_RATE_BASKET'], 'product');
+            }
 
             $body['basketItems'][$index++] = array_merge(
                 [
@@ -433,14 +446,20 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         if (isset($params["DELIVERY_PRICE"]) && $params["DELIVERY_PRICE"] > 0) {
             $shipmentCollection = $payment->getCollection()->getOrder()->getShipmentCollection();
             foreach ($shipmentCollection as $shipment) {
-                if($shipment->isSystem() || $shipment->getPrice() == 0)
+                if ($shipment->isSystem() || $shipment->getPrice() == 0) {
                     continue;
-                
-                if ($params['INVOICEBOX_VAT_RATE_DELIVERY'] == 'SETTINGS_DELIVERY')
+                }
+
+                if ($params['INVOICEBOX_VAT_RATE_DELIVERY'] == 'SETTINGS_DELIVERY') {
                     $arDataWithNDS = self::getNDSData($shipment, 'delivery');
-                else
-                    $arDataWithNDS = self::calculateNDSData($shipment, $params['INVOICEBOX_VAT_RATE_DELIVERY'], 'delivery');
-            
+                } else {
+                    $arDataWithNDS = self::calculateNDSData(
+                        $shipment,
+                        $params['INVOICEBOX_VAT_RATE_DELIVERY'],
+                        'delivery'
+                    );
+                }
+
                 $body['basketItems'][$index++] = array_merge(
                     [
                         'sku' => htmlspecialcharsbx($params['DELIVERY_ID']),
@@ -458,19 +477,18 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 $vatAmount += $arDataWithNDS['totalVatAmount'];
             }
         }
-        
+
         $body['vatAmount'] = (float)roundEx($vatAmount, 2);
 
-		return $body;
-	}
-    
+        return $body;
+    }
+
     private static function getNDSData($item, $addType)
-	{
+    {
         $arRes = [];
         if ($addType == 'product') {
-            if (\Bitrix\Main\Loader::includeModule('catalog')) 
-            {
-                $arNDS  = \CCatalogProduct::GetVATInfo($item->getProductId())->Fetch();
+            if (\Bitrix\Main\Loader::includeModule('catalog')) {
+                $arNDS = \CCatalogProduct::GetVATInfo($item->getProductId())->Fetch();
                 if (isset($arNDS['ID'])) {
                     $arRes['vatCode'] = self::convertNDSFromVatId($arNDS['ID']);
                 } else {
@@ -481,10 +499,9 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             }
             $arRes['totalVatAmount'] = (float)roundEx($item->getVat(), 2);
             $arRes['amountWoVat'] = (float)roundEx($item->getPrice() - ($item->getVat() / $item->getQuantity()), 2);
-        } elseif($addType == 'delivery') {
+        } elseif ($addType == 'delivery') {
             $delivery = \Bitrix\Sale\Delivery\Services\Manager::getById($item->getDeliveryId());
-            if (empty($delivery['VAT_ID'])) 
-            {
+            if (empty($delivery['VAT_ID'])) {
                 $arRes['vatCode'] = self::NDS_NO;
             } else {
                 $arRes['vatCode'] = self::convertNDSFromVatId($delivery['VAT_ID']);
@@ -493,10 +510,10 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             $arRes['totalVatAmount'] = (float)roundEx($item->getVatSum(), 2);
             $arRes['amountWoVat'] = (float)roundEx($item->getPrice() - $item->getVatSum(), 2);
         }
-        
+
         return $arRes;
-	}
-    
+    }
+
     private static function calculateNDSData($item, $vatCode, $addType)
     {
         $arRes = [];
@@ -505,27 +522,30 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         $arRes['vatCode'] = $vatCode;
         if ($addType == 'product') {
             $arRes['amountWoVat'] = (float)roundEx($item->getPrice() / (1 + ($rate / 100)), 2);
-            $arRes['totalVatAmount'] = (float)roundEx(($item->getPrice() - $arRes['amountWoVat']) * $item->getQuantity(), 2);
-        } elseif($addType == 'delivery') {
+            $arRes['totalVatAmount'] = (float)roundEx(
+                ($item->getPrice() - $arRes['amountWoVat']) * $item->getQuantity(),
+                2
+            );
+        } elseif ($addType == 'delivery') {
             $arRes['amountWoVat'] = (float)roundEx($item->getPrice() / (1 + ($rate / 100)), 2);
             $arRes['totalVatAmount'] = (float)roundEx($item->getPrice() - $arRes['amountWoVat'], 2);
         }
-        
+
         return $arRes;
-	}
-	
-	private static function convertNDSFromVatId($vat)
-	{
+    }
+
+    private static function convertNDSFromVatId($vat)
+    {
         $arNDS = \CCatalogVat::GetByID($vat)->Fetch();
 
         $rate = intval($arNDS['RATE']);
-        switch($rate) 
-        {
-            case  0: 
-                if(mb_strtolower($arNDS['NAME']) === GetMessage('INVOICEBOX_WITHOUT_NDS'))
+        switch ($rate) {
+            case  0:
+                if (mb_strtolower($arNDS['NAME']) === GetMessage('INVOICEBOX_WITHOUT_NDS')) {
                     $NDS = self::NDS_NO;
-                else
+                } else {
                     $NDS = self::NDS_0;
+                }
                 break;
 
             case 10:
@@ -536,17 +556,16 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 $NDS = self::NDS_20;
                 break;
 
-            default: 
+            default:
                 $NDS = self::NDS_NO;
                 break;
         }
         return $NDS;
-	}
-    
-	private static function convertNDSFromVatCode($vatCode)
-	{
-        switch($vatCode) 
-        {
+    }
+
+    private static function convertNDSFromVatCode($vatCode)
+    {
+        switch ($vatCode) {
             case self::NDS_NO:
             case self::NDS_0:
                 $rate = 0;
@@ -562,14 +581,14 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 $rate = 20;
                 break;
 
-            default: 
+            default:
                 $rate = 0;
                 break;
         }
         return $rate;
-	}
-    
-    
+    }
+
+
     /**
      * @return array
      */
@@ -599,38 +618,38 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     {
         return true;
     }
-    
+
     /**
-	 * @param Request $request
-	 * @param int $paySystemId
-	 * @return bool
-	 * @throws Main\ArgumentNullException
-	 * @throws Main\ArgumentOutOfRangeException
-	 * @throws Main\ArgumentTypeException
-	 * @throws Main\ObjectException
-	 */
-	public static function isMyResponse(Request $request, $paySystemId)
-	{
+     * @param Request $request
+     * @param int $paySystemId
+     * @return bool
+     * @throws Main\ArgumentNullException
+     * @throws Main\ArgumentOutOfRangeException
+     * @throws Main\ArgumentTypeException
+     * @throws Main\ObjectException
+     */
+    public static function isMyResponse(Request $request, $paySystemId)
+    {
         $paySystemResult = PaySystem\Manager::getList([
-            'filter' => ['ID' => $paySystemId],
-            'select' => ['PS_MODE']
-        ])->fetch();
-        
+                                                          'filter' => ['ID' => $paySystemId],
+                                                          'select' => ['PS_MODE']
+                                                      ])->fetch();
+
         if (empty($paySystemResult['PS_MODE'])) {
             $paySystemResult['PS_MODE'] = self::PAYMENT_VERSION_2;
         }
-        
+
         if (
             !is_null($request->get("participantId"))
             && !is_null($request->get("participantOrderId"))
             && !is_null($request->get("ucode"))
             && !is_null($request->get("sign"))
             && $paySystemResult['PS_MODE'] === self::PAYMENT_VERSION_2
-        ){
+        ) {
             return true;
         } else {
             $inputStream = static::readFromStream();
-            if(static::isJSON($inputStream) && $paySystemResult['PS_MODE'] === self::PAYMENT_VERSION_3) {
+            if (static::isJSON($inputStream) && $paySystemResult['PS_MODE'] === self::PAYMENT_VERSION_3) {
                 if (static::decode($inputStream) === false) {
                     return false;
                 }
@@ -638,21 +657,22 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             }
         }
 
-		return false;
-	}
-    
-    private static function isJSON( $string ){
-        $result = json_decode($string) ;
-        return ( json_last_error() === JSON_ERROR_NONE) ;
+        return false;
     }
 
-	/**
-	 * @return bool|string
-	 */
-	private static function readFromStream()
-	{
-		return file_get_contents('php://input');
-	}
+    private static function isJSON($string)
+    {
+        $result = json_decode($string);
+        return (json_last_error() === JSON_ERROR_NONE);
+    }
+
+    /**
+     * @return bool|string
+     */
+    private static function readFromStream()
+    {
+        return file_get_contents('php://input');
+    }
 
     /**
      * @param Payment $payment
@@ -675,7 +695,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                                 [
                                     'error' => Loc::getMessage('SALE_HPS_INVOICEBOX_LOG_MODULE_IS_NOT_SET_API_KEY')
                                 ],
-                                true
+                                JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
                             ),
                         ]
                     );
@@ -708,9 +728,11 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                             'MODULE_ID' => 'invoicebox.payment',
                             'DESCRIPTION' => json_encode(
                                 [
-                                    'error' => Loc::getMessage('SALE_HPS_INVOICEBOX_LOG_MODULE_IS_ERROR_API_KEY_IN_REQUEST')
+                                    'error' => Loc::getMessage(
+                                        'SALE_HPS_INVOICEBOX_LOG_MODULE_IS_ERROR_API_KEY_IN_REQUEST'
+                                    )
                                 ],
-                                true
+                                JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
                             ),
                         ]
                     );
@@ -720,7 +742,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 $inputStream = static::readFromStream();
                 $apiKey = $this->getBusinessValue($payment, 'INVOICEBOX_NOTIFICATION_TOKEN_V3');
                 if (empty($apiKey)) {
-                   return false;
+                    return false;
                 }
                 $sign = hash_hmac('sha1', $inputStream, $apiKey);
                 $headers = getallheaders();
@@ -729,7 +751,6 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 }
                 return false;
         }
-        
     }
 
     /**
@@ -744,7 +765,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             $this->getBusinessValue($payment, 'PAYMENT_SHOULD_PAY'),
             $payment->getField('CURRENCY')
         );
-        
+
         if ($paymentSum == $sum) {
             return true;
         } else {
@@ -757,14 +778,14 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                         [
                             'error' => Loc::getMessage('SALE_HPS_INVOICEBOX_LOG_REQUEST_AMOUNT_IS_NOT_VALID')
                         ],
-                        true
+                        JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
                     ),
                 ]
             );
             return false;
         }
     }
-    
+
     /**
      * @param Payment $payment
      * @return bool
@@ -782,7 +803,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                             [
                                 'error' => Loc::getMessage('SALE_HPS_INVOICEBOX_LOG_REQUEST_IS_OTHER_PAYMENT_PAYED')
                             ],
-                            true
+                            JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
                         ),
                     ]
                 );
@@ -800,19 +821,16 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     public function getPaymentIdFromRequest(Request $request)
     {
         if (!is_null($request->get('participantOrderId'))) {
-        return $request->get('participantOrderId');
+            return $request->get('participantOrderId');
         } else {
             $inputStream = static::readFromStream();
-            if ($inputStream && static::isJSON($inputStream))
-            {
+            if ($inputStream && static::isJSON($inputStream)) {
                 $data = static::decode($inputStream);
-                if ($data === false)
-                {
+                if ($data === false) {
                     return false;
                 }
 
                 return $data['merchantOrderId'];
-
             }
 
             return false;
@@ -876,8 +894,12 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 $psStatusDescription = Loc::getMessage('SALE_HPS_INVOICEBOX_RES_NUMBER') . ": " . $request->get(
                         'participantOrderId'
                     ) . " (" . $request->get('ucode') . ")";
-                $psStatusDescription .= "; " . Loc::getMessage('SALE_HPS_INVOICEBOX_RES_DATEPAY') . ": " . date("d.m.Y H:i:s");
-                $psStatusDescription .= "; " . Loc::getMessage('SALE_HPS_INVOICEBOX_RES_PAY_TYPE') . ": " . $request->get(
+                $psStatusDescription .= "; " . Loc::getMessage('SALE_HPS_INVOICEBOX_RES_DATEPAY') . ": " . date(
+                        "d.m.Y H:i:s"
+                    );
+                $psStatusDescription .= "; " . Loc::getMessage(
+                        'SALE_HPS_INVOICEBOX_RES_PAY_TYPE'
+                    ) . ": " . $request->get(
                         "agentName"
                     );
                 $amount = $request->get('amount');
@@ -887,8 +909,12 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             case self::PAYMENT_VERSION_3:
                 $inputStream = static::readFromStream();
                 $data = static::decode($inputStream);
-                $psStatusDescription = Loc::getMessage('SALE_HPS_INVOICEBOX_RES_NUMBER') . ": " . $data['merchantOrderId'] . " (" . $data['id'] . ")";
-                $psStatusDescription .= "; " . Loc::getMessage('SALE_HPS_INVOICEBOX_RES_DATEPAY') . ": " . date("d.m.Y H:i:s");
+                $psStatusDescription = Loc::getMessage(
+                        'SALE_HPS_INVOICEBOX_RES_NUMBER'
+                    ) . ": " . $data['merchantOrderId'] . " (" . $data['id'] . ")";
+                $psStatusDescription .= "; " . Loc::getMessage('SALE_HPS_INVOICEBOX_RES_DATEPAY') . ": " . date(
+                        "d.m.Y H:i:s"
+                    );
                 $amount = $data['amount'];
                 $curr = $data['currencyId'];
                 if ($data['status'] === 'completed') {
@@ -896,7 +922,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 }
                 break;
         }
-        
+
         $fields = array(
             "PS_STATUS" => "Y",
             "PS_STATUS_CODE" => "-",
@@ -926,7 +952,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         }
 
         return $result;
-    }  
+    }
 
     /**
      * @param Payment $payment
@@ -966,7 +992,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     {
         return array(
             static::PAYMENT_VERSION_2 => Loc::getMessage('SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOKOL_2'),
-			static::PAYMENT_VERSION_3 => Loc::getMessage('SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOKOL_3'),
+            static::PAYMENT_VERSION_3 => Loc::getMessage('SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOKOL_3'),
         );
     }
 }

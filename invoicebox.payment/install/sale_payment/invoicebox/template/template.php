@@ -16,7 +16,7 @@ Loc::loadMessages(__FILE__);
     <input type="hidden" name="itransfer_participant_ident"
            value="<?= htmlspecialcharsbx($params['INVOICEBOX_PARTICIPANT_IDENT']); ?>"/>
     <input type="hidden" name="itransfer_participant_sign" value="<?= $params['SIGNATURE_VALUE']; ?>"/>
-    <input type="hidden" name="itransfer_cms_name" value="1C-Bitrix"/>
+    <input type="hidden" name="itransfer_cms_name" value="1C-Bitrix (Invoicebox)"/>
     <input type="hidden" name="itransfer_order_id" value="<?= htmlspecialcharsbx($params['PAYMENT_ID']); ?>"/>
     <input type="hidden" name="itransfer_order_amount"
            value="<?= htmlspecialcharsbx(number_format($params['PAYMENT_SHOULD_PAY'], 2, '.', '')); ?>"/>
@@ -25,8 +25,10 @@ Loc::loadMessages(__FILE__);
            value="<?= htmlspecialcharsbx($params["PAYMENT_CURRENCY"]) ?>"/>
     <input type="hidden" name="itransfer_order_description"
            value="<?= htmlspecialcharsbx($params['INVOICEBOX_ORDERDESCR'] . " (#" . $params['ORDERID'] . ")"); ?>"/>
-    <input type="hidden" name="itransfer_body_type" value="PRIVATE"/>
+    <input type="hidden" name="itransfer_body_type" value="<?= htmlspecialcharsbx($params['ORDER_PERSONAL_TYPE']) ?>"/>
     <input type="hidden" name="itransfer_person_name" value="<?= htmlspecialcharsbx($params["BUYER_PERSON_NAME"]) ?>"/>
+    <input type="hidden" name="itransfer_organization_tin" value="<?= htmlspecialcharsbx($params["BUYER_PERSON_INN"]) ?>"/>
+    <input type="hidden" name="itransfer_organization_yaddress" value="<?= htmlspecialcharsbx($params["BUYER_PERSON_ADDRESS"]) ?>"/>
     <input type="hidden" name="itransfer_person_email"
            value="<?= htmlspecialcharsbx($params['BUYER_PERSON_EMAIL']) ?>"/>
     <input type="hidden" name="itransfer_person_phone"
@@ -50,44 +52,24 @@ Loc::loadMessages(__FILE__);
                 'MEASURE_NAME'
             ) : $params['INVOICEBOX_MEASURE_DEFAULT']);
             $measure = ($measure ? $measure : Loc::getMessage("SASP_MEASURE"));
-            echo '<input type="hidden" name="itransfer_item' . $itemNo . '_name" value="' . str_replace(
-                    '"',
-                    '/',
-                    $basketItem->getField(
-                        'NAME'
-                    )
-                ) . '" />' . "\n";
-            echo '<input type="hidden" name="itransfer_item' . $itemNo . '_quantity" value="' . $basketItem->getQuantity(
-                ) . '" />' . "\n";
+            echo '<input type="hidden" name="itransfer_item' . $itemNo . '_type" value="' . ( $params['INVOICEBOX_TYPE_BASKET'] ?? 'commodity' ) . '" />' . "\n";
+            echo '<input type="hidden" name="itransfer_item' . $itemNo . '_ident" value="' . $basketItem->getField('PRODUCT_ID') . '" />' . "\n";
+            echo '<input type="hidden" name="itransfer_item' . $itemNo . '_name" value="' . str_replace( '"', '/', $basketItem->getField( 'NAME' ) ) . '" />' . "\n";
+            echo '<input type="hidden" name="itransfer_item' . $itemNo . '_quantity" value="' . $basketItem->getQuantity() . '" />' . "\n";
             echo '<input type="hidden" name="itransfer_item' . $itemNo . '_measure" value="' . $measure . '" />' . "\n";
-            echo '<input type="hidden" name="itransfer_item' . $itemNo . '_price" value="' . number_format(
-                    $basketItem->getPrice(),
-                    2,
-                    '.',
-                    ''
-                ) . '" />' . "\n";
-            echo '<input type="hidden" name="itransfer_item' . $itemNo . '_vatrate" value="' . roundEx(
-                    $basketItem->getField('VAT_RATE') * 100,
-                    SALE_VALUE_PRECISION
-                ) . '" />' . "\n";
+            echo '<input type="hidden" name="itransfer_item' . $itemNo . '_price" value="' . number_format( $basketItem->getPrice(), 2, '.', '' ) . '" />' . "\n";
+            echo '<input type="hidden" name="itransfer_item' . $itemNo . '_vatrate" value="' . roundEx( $basketItem->getField('VAT_RATE') * 100, SALE_VALUE_PRECISION ) . '" />' . "\n";
         }; //foreach
     }; //Basket Items
 
     if (isset($params["DELIVERY_PRICE"]) && $params["DELIVERY_PRICE"] > 0) {
         $itemNo++;
-        echo '<input type="hidden" name="itransfer_item' . $itemNo . '_name" value="' . Loc::getMessage(
-                "SASP_DOST"
-            ) . '" />' . "\n";
+        echo '<input type="hidden" name="itransfer_item' . $itemNo . '_type" value="' . ( $params['INVOICEBOX_TYPE_DELIVERY'] ?? 'service' ) . '" />' . "\n";
+        echo '<input type="hidden" name="itransfer_item' . $itemNo . '_ident" value="delivery" />' . "\n";
+        echo '<input type="hidden" name="itransfer_item' . $itemNo . '_name" value="' . Loc::getMessage( "SASP_DOST" ) . '" />' . "\n";
         echo '<input type="hidden" name="itransfer_item' . $itemNo . '_quantity" value="1" />' . "\n";
-        echo '<input type="hidden" name="itransfer_item' . $itemNo . '_measure" value="' . Loc::getMessage(
-                "SASP_MEASURE"
-            ) . '" />' . "\n";
-        echo '<input type="hidden" name="itransfer_item' . $itemNo . '_price" value="' . number_format(
-                $params["DELIVERY_PRICE"],
-                2,
-                '.',
-                ''
-            ) . '" />' . "\n";
+        echo '<input type="hidden" name="itransfer_item' . $itemNo . '_measure" value="' . Loc::getMessage( "SASP_MEASURE" ) . '" />' . "\n";
+        echo '<input type="hidden" name="itransfer_item' . $itemNo . '_price" value="' . number_format( $params["DELIVERY_PRICE"], 2, '.', '' ) . '" />' . "\n";
         echo '<input type="hidden" name="itransfer_item' . $itemNo . '_vatrate" value="0" />' . "\n";
     }
     ?>
