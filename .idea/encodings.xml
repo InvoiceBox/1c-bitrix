@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/invoicebox.payment/install/lang/ru/index.php" charset="windows-1251" />
+    <file url="file://$PROJECT_DIR$/invoicebox.payment/install/notifications/invoicebox/lang/ru/failed.php" charset="windows-1251" />
+    <file url="file://$PROJECT_DIR$/invoicebox.payment/install/notifications/invoicebox/lang/ru/success.php" charset="windows-1251" />
+    <file url="file://$PROJECT_DIR$/invoicebox.payment/install/sale_payment/invoicebox/lang/ru/.description.php" charset="windows-1251" />
+    <file url="file://$PROJECT_DIR$/invoicebox.payment/install/sale_payment/invoicebox/lang/ru/handler.php" charset="windows-1251" />
+    <file url="file://$PROJECT_DIR$/invoicebox.payment/install/sale_payment/invoicebox/template/lang/ru/template.php" charset="windows-1251" />
+    <file url="file://$PROJECT_DIR$/invoicebox.payment/install/sale_payment/invoicebox/template/lang/ru/template_v3.php" charset="windows-1251" />
+    <file url="file://$PROJECT_DIR$/invoicebox.payment/install/tools/invoicebox/lang/ru/notification.php" charset="windows-1251" />
+    <file url="file://$PROJECT_DIR$/invoicebox.payment/lang/ru/include.php" charset="windows-1251" />
+  </component>
+</project>
