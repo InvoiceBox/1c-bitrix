@@ -34,6 +34,11 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         'sign' => 'signature_error',
     ];
 
+    const TEST_ORDER = [
+        '00000-00000-00000-00000',
+        'ffffffff-ffff-ffff-ffff-ffffffffffff'
+    ];
+
     const NDS_NO = 'NONE';
     const NDS_0 = 'RUS_VAT0';
     const NDS_10 = 'RUS_VAT10';
@@ -813,7 +818,6 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         return true;
     }
 
-
     /**
      * @param Request $request
      * @return mixed
@@ -888,6 +892,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         $amount = 0;
         $curr = 'RUB';
         $bPay = false;
+        $invoiceId = "";
 
         switch ($version) {
             case self::PAYMENT_VERSION_2:
@@ -903,6 +908,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                         "agentName"
                     );
                 $amount = $request->get('amount');
+                $invoiceId = $request->get('ucode');
                 $curr = $this->getBusinessValue($payment, "PAYMENT_CURRENCY");
                 $bPay = true;
                 break;
@@ -916,12 +922,18 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                         "d.m.Y H:i:s"
                     );
                 $amount = $data['amount'];
+                $invoiceId = $data['id'];
                 $curr = $data['currencyId'];
                 if ($data['status'] === 'completed') {
                     $bPay = true;
                 }
                 break;
         }
+
+        // Test requests
+        if ($invoiceId && in_array($invoiceId, self::TEST_ORDER)) {
+            return $result;
+        }; //
 
         $fields = array(
             "PS_STATUS" => "Y",
