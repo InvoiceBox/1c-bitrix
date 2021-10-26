@@ -10,5 +10,6 @@
     <file url="file://$PROJECT_DIR$/invoicebox.payment/install/sale_payment/invoicebox/template/lang/ru/template_v3.php" charset="windows-1251" />
     <file url="file://$PROJECT_DIR$/invoicebox.payment/install/tools/invoicebox/lang/ru/notification.php" charset="windows-1251" />
     <file url="file://$PROJECT_DIR$/invoicebox.payment/lang/ru/include.php" charset="windows-1251" />
+    <file url="file://$PROJECT_DIR$/marketplace_update/description.ru" charset="windows-1251" />
   </component>
 </project>
