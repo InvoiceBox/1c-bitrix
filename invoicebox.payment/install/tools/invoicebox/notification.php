@@ -16,18 +16,11 @@ use Bitrix\Main\Localization\Loc;
 global $APPLICATION;
 Loc::loadMessages(__FILE__);
 
-//получаем объект запроса и проверяем наличие платежной системы
+// Получаем объект запроса и проверяем наличие платежной системы
 $context = Application::getInstance()->getContext();
 $request = $context->getRequest();
 
-//проверка ip-адресов и типа запроса
-$legal_ip = [
-    '77.244.212.7',
-    '77.244.212.8',
-    '77.244.212.9'
-];
-
-if ($request->get('testMode') == 1 && !in_array($_SERVER['REMOTE_ADDR'], $legal_ip)) {
+if ($request->get('testMode') == 1) {
     CEventLog::Add(
         [
             'SEVERITY' => 'INFO',
@@ -44,23 +37,6 @@ if ($request->get('testMode') == 1 && !in_array($_SERVER['REMOTE_ADDR'], $legal_
     exit('success: checking test mode');
 }
 
-if (!in_array($_SERVER['REMOTE_ADDR'], $legal_ip)) {
-    CEventLog::Add(
-        [
-            'SEVERITY' => 'ERROR',
-            'AUDIT_TYPE_ID' => 'INVOICE_PAYMENT_LOG',
-            'MODULE_ID' => 'invoicebox.payment',
-            'DESCRIPTION' => json_encode(
-                [
-                    'ip_server' => $_SERVER['REMOTE_ADDR'],
-                    'error' => Loc::getMessage('SALE_HPS_INVOICEBOX_LOG_FORBIDDEN_SERVER')
-                ],
-                JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
-            ),
-        ]
-    );
-    exit('error: 403 forbidden');
-}
 if ($_SERVER['REQUEST_METHOD'] != 'POST') {
     CEventLog::Add(
         [
@@ -77,7 +53,6 @@ if ($_SERVER['REQUEST_METHOD'] != 'POST') {
     );
     exit ('error: request type is invalid');
 }
-
 
 $item = PaySystem\Manager::searchByRequest($request);
 if ($item !== false) {
