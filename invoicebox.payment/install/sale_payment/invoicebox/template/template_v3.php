@@ -19,18 +19,21 @@ Loc::loadMessages(__FILE__);
                 $params["PAYMENT_CURRENCY"]
             ) ?></b>
 	</span>
-	<div class="sale-paysystem-yandex-button-container">
-		<span class="sale-paysystem-yandex-button">
-			<a class="sale-paysystem-yandex-button-item sale-paysystem-yandex-checkout-button-item" href="<?=$params['URL'];?>" style="display: inline-block;">
-				<?=Loc::getMessage('SALE_HPS_INVOICEBOX_TEMPL_BUTTON')?>
+    <div class="sale-paysystem-invoicebox-button-container">
+		<span class="sale-paysystem-invoicebox-button">
+			<a class="sale-paysystem-invoicebox-button-item sale-paysystem-invoicebox-checkout-button-item"
+               href="<?= $params['URL']; ?>" style="display: inline-block;">
+				<?= Loc::getMessage('SALE_HPS_INVOICEBOX_TEMPL_BUTTON') ?>
 			</a>
 		</span>
-		<span class="sale-paysystem-yandex-button-descrition"><?=Loc::getMessage('SALE_HPS_INVOICEBOX_TEMPL_TO_PAY_REDIRECT_MESS');?></span>
-	</div>
+        <span class="sale-paysystem-invoicebox-button-descrition"><?= Loc::getMessage(
+                'SALE_HPS_INVOICEBOX_TEMPL_TO_PAY_REDIRECT_MESS'
+            ); ?></span>
+    </div>
 
-	<p>
+    <p>
 		<span class="tablebodytext sale-paysystem-description">
-			<?=Loc::getMessage('SALE_HPS_INVOICEBOX_TEMPL_WARN');?>
+			<?= Loc::getMessage('SALE_HPS_INVOICEBOX_TEMPL_WARN'); ?>
 		</span>
-	</p>
+    </p>
 </div>

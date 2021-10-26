@@ -14,12 +14,12 @@
 	color: #bcbdc0;
 }
 
-.sale-paysystem-yandex-button {
+.sale-paysystem-invoicebox-button {
 	display: inline-block;
 	margin: 26px 10px 26px 0;
 }
 
-.sale-paysystem-yandex-button-item {
+.sale-paysystem-invoicebox-button-item {
 	padding: 0px 20px;
 	height: 38px;
 	border: 0;
@@ -32,15 +32,15 @@
 	-moz-transition: background .3s ease;
 	transition: background .3s ease;
 }
-.sale-paysystem-yandex-button-item[type=submit] {
+.sale-paysystem-invoicebox-button-item[type=submit] {
     padding: 0 20px;
 }
-.sale-paysystem-yandex-button-item:hover {
+.sale-paysystem-invoicebox-button-item:hover {
 	background: rgb(244, 201, 50);
     color: rgb(53, 63, 71);
 }
 
-.sale-paysystem-yandex-button-descrition {
+.sale-paysystem-invoicebox-button-descrition {
 	display: inline-block;
 	margin: 0 0 15px 0;
 	font: 12px "Helvetica Neue", Arial, Helvetica, sans-serif;

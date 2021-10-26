@@ -103,20 +103,23 @@ Loc::loadMessages(__FILE__);
                     $params["PAYMENT_CURRENCY"]
                 ) ?></b>
         </span>
-        <div class="sale-paysystem-yandex-button-container">
-             <input type="hidden" name="FinalStep" value="1">
+        <div class="sale-paysystem-invoicebox-button-container">
+            <input type="hidden" name="FinalStep" value="1">
             <?php if ($params['SUCCESS_PAY']) : ?>
-            <span class="sale-paysystem-yandex-button">
-                <input class ='sale-paysystem-yandex-button-item' type="submit" name="Submit" value="<?= Loc::getMessage("SALE_HPS_INVOICEBOX_TEMPL_BUTTON") ?>">
+                <span class="sale-paysystem-invoicebox-button">
+                <input class='sale-paysystem-invoicebox-button-item' type="submit" name="Submit"
+                       value="<?= Loc::getMessage("SALE_HPS_INVOICEBOX_TEMPL_BUTTON") ?>">
             </span>
-            <span class="sale-paysystem-yandex-button-descrition"><?=Loc::getMessage('SALE_HPS_INVOICEBOX_TEMPL_TO_PAY_REDIRECT_MESS');?></span>
+                <span class="sale-paysystem-invoicebox-button-descrition"><?= Loc::getMessage(
+                        'SALE_HPS_INVOICEBOX_TEMPL_TO_PAY_REDIRECT_MESS'
+                    ); ?></span>
             <?php else : ?>
                 <span style="color:red"><?= Loc::getMessage("SALE_HPS_INVOICEBOX_PAY_INFO") ?></span>
             <?php endif; ?>
         </div>
         <p>
             <span class="tablebodytext sale-paysystem-description">
-                <?=Loc::getMessage('SALE_HPS_INVOICEBOX_TEMPL_WARN');?>
+                <?= Loc::getMessage('SALE_HPS_INVOICEBOX_TEMPL_WARN'); ?>
             </span>
         </p>
     </div>
