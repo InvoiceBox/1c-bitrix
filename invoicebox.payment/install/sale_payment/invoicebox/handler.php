@@ -19,12 +19,19 @@ Loc::loadMessages(__FILE__);
 
 class InvoiceBoxHandler extends PaySystem\ServiceHandler
 {
+    const VERSION = '2.0.2';
+    const VERSION_UNKNOWN = 'unknown';
+
     const PAYMENT_VERSION_2 = 'version_2';
+    const URL_v2 = 'https://go.invoicebox.ru/module_inbox_auto.u';
+
     const PAYMENT_VERSION_3 = 'version_3';
-    const URL = 'https://api.invoicebox.ru/v3/';
+    const URL_v3 = 'https://api.invoicebox.ru/v3/';
+
     const URL_CREATE_ORDER = 'billing/api/order/order';
     const STATUS_CREATED = 'created';
     const STATUS_CANCELED = 'canceled';
+    const STATUS_COMPLETED = 'completed';
 
     const NOTIFICATION_ERROR_CODE = [
         'other' => 'out_of_service',
@@ -45,6 +52,13 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     const NDS_20 = 'RUS_VAT20';
     const NDS_10_110 = 'RUS_VAT110';
     const NDS_20_120 = 'RUS_VAT120';
+
+    const VATRATE_NO = 6;
+    const VATRATE_0 = 5;
+    const VATRATE_10_110 = 4;
+    const VATRATE_20_120 = 3;
+    const VATRATE_10 = 2;
+    const VATRATE_20 = 1;
 
     /**
      * @param Payment $payment
@@ -73,7 +87,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             case self::PAYMENT_VERSION_2:
                 $extraParams["SIGNATURE_VALUE"] = $signatureValue;
                 $extraParams["INVOICEBOX_API_KEY"] = $this->getBusinessValue($payment, 'INVOICEBOX_PARTICIPANT_APIKEY');
-                $extraParams["URL"] = $this->getUrl($payment, 'pay');
+                $extraParams["URL"] = $this->getUrl($payment, $version);
                 $extraParams["INVOICEBOX_NOTIFY_URL"] = $this->getBusinessValue(
                     $payment,
                     'INVOICEBOX_RETURN_URL_NOTIFY_2'
@@ -84,15 +98,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                     $payment,
                     'INVOICEBOX_PARTICIPANT_ID_V3'
                 );
-                $extraParams["URL"] = $this->getUrl($payment, 'pay_v3');
-                $extraParams["INVOICEBOX_VAT_RATE_BASKET"] = $this->getBusinessValue(
-                    $payment,
-                    'INVOICEBOX_VAT_RATE_BASKET'
-                );
-                $extraParams["INVOICEBOX_VAT_RATE_DELIVERY"] = $this->getBusinessValue(
-                    $payment,
-                    'INVOICEBOX_VAT_RATE_DELIVERY'
-                );
+                $extraParams["URL"] = $this->getUrl($payment, $version);
                 $extraParams["INVOICEBOX_NOTIFY_URL"] = $this->getBusinessValue(
                     $payment,
                     'INVOICEBOX_RETURN_URL_NOTIFY_3'
@@ -100,6 +106,11 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 break;
         }
 
+        $extraParams["INVOICEBOX_VAT_RATE_BASKET"] = $this->getBusinessValue($payment, 'INVOICEBOX_VAT_RATE_BASKET');
+        $extraParams["INVOICEBOX_VAT_RATE_DELIVERY"] = $this->getBusinessValue(
+            $payment,
+            'INVOICEBOX_VAT_RATE_DELIVERY'
+        );
         $extraParams["INVOICEBOX_TYPE_DELIVERY"] = $this->getBusinessValue($payment, 'INVOICEBOX_TYPE_DELIVERY');
         $extraParams["INVOICEBOX_TYPE_BASKET"] = $this->getBusinessValue($payment, 'INVOICEBOX_TYPE_BASKET');
         $extraParams["INVOICEBOX_RETURN_URL"] = $this->getBusinessValue($payment, 'INVOICEBOX_RETURN_URL');
@@ -178,21 +189,15 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         return isset($params['PS_IS_DEFFERED_PAYMENT']) && !empty($params['PS_IS_DEFFERED_PAYMENT']['VALUE']) ? $params['PS_IS_DEFFERED_PAYMENT']['VALUE'] : false;
     }
 
-    /**
-     * @param Payment $payment
-     * @param Request|null $request
-     * @return PaySystem\ServiceResult
-     */
-    public function initiatePay(Payment $payment, Request $request = null)
+    public function setPreparedBasketItems($paymentCollection, &$extraParams)
     {
-        $version = $this->service->getField('PS_MODE') ?: self::PAYMENT_VERSION_2;
-        /** @var \Bitrix\Sale\PaymentCollection $paymentCollection */
-        $paymentCollection = $payment->getCollection();
+        $result = [];
 
         /** @var \Bitrix\Sale\Order $order */
         $order = $paymentCollection->getOrder();
 
-        $extraParams = $this->getPreparedParams($payment, $request, $version);
+        $extraParams["SM_VERSION"] = (defined('SM_VERSION') ? constant("SM_VERSION") : self::VERSION_UNKNOWN);
+        $extraParams["VERSION"] = self::VERSION;
         $extraParams["BASKET_ITEMS"] = $order->getBasket();
         $extraParams["DELIVERY_PRICE"] = $order->getDeliveryPrice();
 
@@ -208,6 +213,100 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         $shipment = $shipmentCollection->getItemById($shipmentRes["ID"]);
         $extraParams["DELIVERY_NAME"] = $shipment->getDeliveryName() ?: '';
         $extraParams["DELIVERY_ID"] = 'delivery_' . $shipment->getDeliveryID() ?: '';
+
+        $totalVat = 0;
+        $totalAmount = 0;
+
+        foreach ($extraParams['BASKET_ITEMS'] as $basketItem) {
+            $basketField = $basketItem->getFields();
+
+            if ($extraParams['INVOICEBOX_VAT_RATE_BASKET'] == 'SETTINGS_BASKET') {
+                $arDataWithNDS = self::getNDSData($basketItem, 'product');
+            } else {
+                $arDataWithNDS = self::calculateNDSData(
+                    $basketItem,
+                    $extraParams['INVOICEBOX_VAT_RATE_BASKET'],
+                    'product'
+                );
+            }
+
+            $amount = number_format((float)roundEx($basketItem->getFinalPrice(), 2), 2, '.', '');
+            $result[$index++] = array_merge(
+                [
+                    'sku' => htmlspecialcharsbx($basketField['PRODUCT_ID']),
+                    'name' => htmlspecialcharsbx($basketField['NAME']),
+                    'measure' => $basketField['MEASURE_NAME'] ?: Loc::getMessage('MEASURE_NAME_DEFAULT'),
+                    'measureCode' => (string)$basketField['MEASURE_CODE'] ?: Loc::getMessage('MEASURE_CODE_DEFAULT'),
+                    'quantity' => (float)$basketField['QUANTITY'],
+                    'amount' => number_format((float)roundEx($basketItem->getPrice(), 2), 2, '.', ''),
+                    'totalAmount' => $amount,
+                    'type' => $extraParams['INVOICEBOX_TYPE_BASKET'] ?? 'commodity',
+                    'paymentType' => $extraParams['INVOICEBOX_PAYMENT_TYPE'] ?? 'full_prepayment',
+                ],
+                $arDataWithNDS
+            );
+            $totalVat += $arDataWithNDS['totalVatAmount'];
+            $totalAmount += $amount;
+        }
+
+        if (isset($extraParams["DELIVERY_PRICE"]) && $extraParams["DELIVERY_PRICE"] > 0) {
+            $shipmentCollection = $payment->getCollection()->getOrder()->getShipmentCollection();
+            foreach ($shipmentCollection as $shipment) {
+                if ($shipment->isSystem() || $shipment->getPrice() == 0) {
+                    continue;
+                }
+
+                if ($extraParams['INVOICEBOX_VAT_RATE_DELIVERY'] == 'SETTINGS_DELIVERY') {
+                    $arDataWithNDS = self::getNDSData($shipment, 'delivery');
+                } else {
+                    $arDataWithNDS = self::calculateNDSData(
+                        $shipment,
+                        $extraParams['INVOICEBOX_VAT_RATE_DELIVERY'],
+                        'delivery'
+                    );
+                }
+
+                $amount = number_format(roundEx($shipment->getPrice(), 2), 2, '.', '');
+                $result[$index++] = array_merge(
+                    [
+                        'sku' => htmlspecialcharsbx($extraParams['DELIVERY_ID']),
+                        'name' => htmlspecialcharsbx($extraParams['DELIVERY_NAME']),
+                        'measure' => Loc::getMessage('MEASURE_NAME_DEFAULT'),
+                        'measureCode' => (string)Loc::getMessage('MEASURE_CODE_DEFAULT'),
+                        'quantity' => 1,
+                        'amount' => $amount,
+                        'totalAmount' => $amount,
+                        'type' => $extraParams['INVOICEBOX_TYPE_DELIVERY'] ?? 'service',
+                        'paymentType' => $extraParams['INVOICEBOX_PAYMENT_TYPE'] ?? 'full_prepayment',
+                    ],
+                    $arDataWithNDS
+                );
+                $totalVat += $arDataWithNDS['totalVatAmount'];
+                $totalAmount += $amount;
+            }
+        }
+
+        $extraParams['BASKET_ITEMS_PREPARED'] = $result;
+        $extraParams['BASKET_TOTAL_AMOUNT'] = $totalAmount;
+        $extraParams['BASKET_TOTAL_VAT'] = $totalVat;
+
+        return $result;
+    }
+
+    /**
+     * @param Payment $payment
+     * @param Request|null $request
+     * @return PaySystem\ServiceResult
+     */
+    public function initiatePay(Payment $payment, Request $request = null)
+    {
+        $version = $this->service->getField('PS_MODE') ?: self::PAYMENT_VERSION_2;
+        /** @var \Bitrix\Sale\PaymentCollection $paymentCollection */
+        $paymentCollection = $payment->getCollection();
+
+        $extraParams = $this->getPreparedParams($payment, $request, $version);
+
+        $this->setPreparedBasketItems($paymentCollection, $extraParams);
 
         $this->setExtraParams($extraParams);
 
@@ -284,8 +383,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
 
         $params['URL'] .= self::URL_CREATE_ORDER;
 
-        $headers = $this->getHeaders($payment);
-        $body = $this->getBodyRequest($payment, array_merge($this->getParamsBusValue($payment), $params));
+        $headers = $this->getHeaders_v3($payment);
+        $body = $this->getBodyRequest_v3($payment, array_merge($this->getParamsBusValue($payment), $params));
 
         $sendResult = $this->send($params['URL'], $headers, $body);
 
@@ -380,13 +479,14 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      * @param Payment $payment
      * @return array
      */
-    private function getHeaders(Payment $payment)
+    private function getHeaders_v3(Payment $payment)
     {
         $headers = [
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
-            // ToDo: add versions
-            'User-Agent' => 'Bitrix/X (Invoicebox 2.0.1)',
+            'User-Agent' => 'Bitrix/' . (defined('SM_VERSION') ? constant(
+                    "SM_VERSION"
+                ) : self::VERSION_UNKNOWN) . ' (Invoicebox ' . self::VERSION . ')',
             'Authorization' => 'Bearer ' . $this->getBusinessValue($payment, 'INVOICEBOX_AUTH_TOKEN'),
         ];
 
@@ -397,13 +497,13 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      * @param array $params
      * @return array
      */
-    private function getBodyRequest(Payment $payment, array $params)
+    private function getBodyRequest_v3(Payment $payment, array $params)
     {
-        $vatAmount = 0;
         $body = [
             'merchantId' => $params['INVOICEBOX_MERCHANT_ID'],
             'merchantOrderId' => (string)$params['ORDERID'],
             'amount' => (float)htmlspecialcharsbx(number_format($params['PAYMENT_SHOULD_PAY'], 2, '.', '')),
+            'vatAmount' => (float)htmlspecialcharsbx(number_format($params['BASKET_TOTAL_VAT'], 2, '.', '')),
             'successUrl' => htmlspecialcharsbx($params["INVOICEBOX_RETURN_URL_SUCCESS"]),
             'failUrl' => htmlspecialcharsbx($params["INVOICEBOX_RETURN_URL_CANCEL"]),
             'notificationUrl' => htmlspecialcharsbx($params["INVOICEBOX_NOTIFY_URL"]),
@@ -419,71 +519,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 'vatNumber' => $params['BUYER_PERSON_INN'] ?? '',
                 'registrationAddress' => $params['BUYER_PERSON_REGISTR_ADDRESS'] ?? '',
             ],
-        ];
-
-        $index = 0;
-        foreach ($params['BASKET_ITEMS'] as $basketItem) {
-            $basketField = $basketItem->getFields();
-
-            if ($params['INVOICEBOX_VAT_RATE_BASKET'] == 'SETTINGS_BASKET') {
-                $arDataWithNDS = self::getNDSData($basketItem, 'product');
-            } else {
-                $arDataWithNDS = self::calculateNDSData($basketItem, $params['INVOICEBOX_VAT_RATE_BASKET'], 'product');
-            }
-
-            $body['basketItems'][$index++] = array_merge(
-                [
-                    'sku' => htmlspecialcharsbx($basketField['PRODUCT_ID']),
-                    'name' => htmlspecialcharsbx($basketField['NAME']),
-                    'measure' => $basketField['MEASURE_NAME'] ?: Loc::getMessage('MEASURE_NAME_DEFAULT'),
-                    'measureCode' => (string)$basketField['MEASURE_CODE'] ?: Loc::getMessage('MEASURE_CODE_DEFAULT'),
-                    'quantity' => (float)$basketField['QUANTITY'],
-                    'amount' => (float)roundEx($basketItem->getPrice(), 2),
-                    'totalAmount' => (float)roundEx($basketItem->getFinalPrice(), 2),
-                    'type' => $params['INVOICEBOX_TYPE_BASKET'] ?? 'commodity',
-                    'paymentType' => $params['INVOICEBOX_PAYMENT_TYPE'] ?? 'full_prepayment',
-                ],
-                $arDataWithNDS
-            );
-            $vatAmount += $arDataWithNDS['totalVatAmount'];
-        }
-
-        if (isset($params["DELIVERY_PRICE"]) && $params["DELIVERY_PRICE"] > 0) {
-            $shipmentCollection = $payment->getCollection()->getOrder()->getShipmentCollection();
-            foreach ($shipmentCollection as $shipment) {
-                if ($shipment->isSystem() || $shipment->getPrice() == 0) {
-                    continue;
-                }
-
-                if ($params['INVOICEBOX_VAT_RATE_DELIVERY'] == 'SETTINGS_DELIVERY') {
-                    $arDataWithNDS = self::getNDSData($shipment, 'delivery');
-                } else {
-                    $arDataWithNDS = self::calculateNDSData(
-                        $shipment,
-                        $params['INVOICEBOX_VAT_RATE_DELIVERY'],
-                        'delivery'
-                    );
-                }
-
-                $body['basketItems'][$index++] = array_merge(
-                    [
-                        'sku' => htmlspecialcharsbx($params['DELIVERY_ID']),
-                        'name' => htmlspecialcharsbx($params['DELIVERY_NAME']),
-                        'measure' => Loc::getMessage('MEASURE_NAME_DEFAULT'),
-                        'measureCode' => (string)Loc::getMessage('MEASURE_CODE_DEFAULT'),
-                        'quantity' => 1,
-                        'amount' => roundEx($shipment->getPrice(), 2),
-                        'totalAmount' => roundEx($shipment->getPrice(), 2),
-                        'type' => $params['INVOICEBOX_TYPE_DELIVERY'] ?? 'service',
-                        'paymentType' => $params['INVOICEBOX_PAYMENT_TYPE'] ?? 'full_prepayment',
-                    ],
-                    $arDataWithNDS
-                );
-                $vatAmount += $arDataWithNDS['totalVatAmount'];
-            }
-        }
-
-        $body['vatAmount'] = (float)roundEx($vatAmount, 2);
+            "basketItems" => $params['BASKET_ITEMS_PREPARED'],
+        ]; //
 
         return $body;
     }
@@ -491,25 +528,31 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     private static function getNDSData($item, $addType)
     {
         $arRes = [];
+        $arRes['vatCode'] = self::NDS_NO;
+        $arRes['vatRate'] = self::VATRATE_NO;
+
         if ($addType == 'product') {
             if (\Bitrix\Main\Loader::includeModule('catalog')) {
                 $arNDS = \CCatalogProduct::GetVATInfo($item->getProductId())->Fetch();
                 if (isset($arNDS['ID'])) {
-                    $arRes['vatCode'] = self::convertNDSFromVatId($arNDS['ID']);
-                } else {
-                    $arRes['vatCode'] = self::NDS_NO;
+                    $vatCode = $arRes['vatCode'];
+                    $vatRate = $arRes['vatRate'];
+                    self::convertNDSFromVatId($arNDS['ID'], $vatRate, $vatCode);
+                    $arRes['vatCode'] = $vatCode;
+                    $arRes['vatRate'] = $vatRate;
                 }
-            } else {
-                $arRes['vatCode'] = self::NDS_NO;
             }
+
             $arRes['totalVatAmount'] = (float)roundEx($item->getVat(), 2);
             $arRes['amountWoVat'] = (float)roundEx($item->getPrice() - ($item->getVat() / $item->getQuantity()), 2);
         } elseif ($addType == 'delivery') {
             $delivery = \Bitrix\Sale\Delivery\Services\Manager::getById($item->getDeliveryId());
-            if (empty($delivery['VAT_ID'])) {
-                $arRes['vatCode'] = self::NDS_NO;
-            } else {
-                $arRes['vatCode'] = self::convertNDSFromVatId($delivery['VAT_ID']);
+            if (!empty($delivery['VAT_ID'])) {
+                $vatCode = $arRes['vatCode'];
+                $vatRate = $arRes['vatRate'];
+                self::convertNDSFromVatId($delivery['VAT_ID'], $vatRate, $vatCode);
+                $arRes['vatCode'] = $vatCode;
+                $arRes['vatRate'] = $vatRate;
             }
 
             $arRes['totalVatAmount'] = (float)roundEx($item->getVatSum(), 2);
@@ -522,9 +565,12 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     private static function calculateNDSData($item, $vatCode, $addType)
     {
         $arRes = [];
-        $rate = self::convertNDSFromVatCode($vatCode);
+        $vatRate = self::VATRATE_NO;
+        $rate = 0;
+        self::convertNDSFromVatCode($vatCode, $vatRate, $rate);
 
         $arRes['vatCode'] = $vatCode;
+        $arRes['vatRate'] = $vatRate;
         if ($addType == 'product') {
             $arRes['amountWoVat'] = (float)roundEx($item->getPrice() / (1 + ($rate / 100)), 2);
             $arRes['totalVatAmount'] = (float)roundEx(
@@ -539,58 +585,71 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         return $arRes;
     }
 
-    private static function convertNDSFromVatId($vat)
+    private static function convertNDSFromVatId($vatId, &$vatRate, &$vatCode)
     {
-        $arNDS = \CCatalogVat::GetByID($vat)->Fetch();
+        $arNDS = \CCatalogVat::GetByID($vatId)->Fetch();
 
         $rate = intval($arNDS['RATE']);
         switch ($rate) {
             case  0:
                 if (mb_strtolower($arNDS['NAME']) === GetMessage('INVOICEBOX_WITHOUT_NDS')) {
-                    $NDS = self::NDS_NO;
+                    $vatCode = self::NDS_NO;
+                    $vatRate = self::VATRATE_NO;
                 } else {
-                    $NDS = self::NDS_0;
+                    $vatCode = self::NDS_0;
+                    $vatRate = self::VATRATE_0;
                 }
                 break;
 
             case 10:
-                $NDS = self::NDS_10;
+                $vatCode = self::NDS_10;
+                $vatRate = self::VATRATE_10_110;
                 break;
 
             case 20:
-                $NDS = self::NDS_20;
+                $vatCode = self::NDS_20;
+                $vatRate = self::VATRATE_20_120;
                 break;
 
             default:
-                $NDS = self::NDS_NO;
+                $vatCode = self::NDS_NO;
+                $vatRate = self::VATRATE_NO;
                 break;
         }
-        return $NDS;
+        return true;
     }
 
-    private static function convertNDSFromVatCode($vatCode)
+    private static function convertNDSFromVatCode($vatCode, &$vatRate, &$rate)
     {
+        $rate = 0;
+        $vatRate = self::VATRATE_NO;
+
         switch ($vatCode) {
             case self::NDS_NO:
+                break;
             case self::NDS_0:
                 $rate = 0;
+                $vatRate = self::VATRATE_0;
                 break;
-
             case self::NDS_10:
             case self::NDS_10_110:
                 $rate = 10;
+                $vatRate = self::VATRATE_10_110;
                 break;
 
             case self::NDS_20:
             case self::NDS_20_120:
                 $rate = 20;
+                $vatRate = self::VATRATE_20_120;
                 break;
 
             default:
                 $rate = 0;
+                $vatRate = self::VATRATE_NO;
                 break;
         }
-        return $rate;
+
+        return true;
     }
 
 
@@ -847,11 +906,11 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     protected function getUrlList()
     {
         return [
-            'pay' => [
-                self::ACTIVE_URL => 'https://go.invoicebox.ru/module_inbox_auto.u'
+            self::PAYMENT_VERSION_2 => [
+                self::ACTIVE_URL => self::URL_v2
             ],
-            'pay_v3' => [
-                self::ACTIVE_URL => self::URL
+            self::PAYMENT_VERSION_3 => [
+                self::ACTIVE_URL => self::URL_v3
             ]
         ];
     }
@@ -924,7 +983,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 $amount = $data['amount'];
                 $invoiceId = $data['id'];
                 $curr = $data['currencyId'];
-                if ($data['status'] === 'completed') {
+                if ($data['status'] === self::STATUS_COMPLETED) {
                     $bPay = true;
                 }
                 break;
