@@ -63,10 +63,15 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     /**
      * @param Payment $payment
      * @param Request|null $request
+     * @param string $version
      * @return array
      */
-    protected function getPreparedParams(Payment $payment, Request $request = null, $version = self::PAYMENT_VERSION_2)
-    {
+    protected function getPreparedParams(
+        Payment $payment,
+        Request $request = null,
+        $version = self::PAYMENT_VERSION_2
+    ): array {
+        $signatureValue = "";
         if ($version == self::PAYMENT_VERSION_2) {
             $signatureValue = md5(
                 $this->getBusinessValue($payment, 'INVOICEBOX_PARTICIPANT_ID') .
@@ -80,7 +85,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         $extraParams = array();
         if (method_exists(parent, "getPreparedParams")) {
             $extraParams = parent::getPreparedParams($payment, $request);
-        };
+        }
 
         $extraParams["PS_MODE"] = $this->service->getField('PS_MODE') ?: self::PAYMENT_VERSION_2;
         switch ($version) {
@@ -165,7 +170,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         return $extraParams;
     }
 
-    protected function successPay($payment, $order)
+    protected function successPay($payment, $order): bool
     {
         if (!$this->isDefferedPayment() || ($this->isDefferedPayment() && $order->getField(
                     'STATUS_ID'
@@ -189,14 +194,14 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         return isset($params['PS_IS_DEFFERED_PAYMENT']) && !empty($params['PS_IS_DEFFERED_PAYMENT']['VALUE']) ? $params['PS_IS_DEFFERED_PAYMENT']['VALUE'] : false;
     }
 
-    public function getUserAgent()
+    public function getUserAgent(): string
     {
         return 'Bitrix/' . (defined('SM_VERSION') ? constant(
                 "SM_VERSION"
             ) : self::VERSION_UNKNOWN) . ' (Invoicebox ' . self::VERSION . ')';
     }
 
-    public function setPreparedBasketItems($payment, $paymentCollection, &$extraParams)
+    public function setPreparedBasketItems($payment, $paymentCollection, &$extraParams): array
     {
         $result = [];
 
@@ -222,6 +227,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
 
         $totalVat = 0;
         $totalAmount = 0;
+        $index = 0;
 
         foreach ($extraParams['BASKET_ITEMS'] as $basketItem) {
             $basketField = $basketItem->getFields();
@@ -379,9 +385,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     /**
      * @param Payment $payment
      * @param Request $request
+     * @param $params
      * @return PaySystem\ServiceResult
-     * @throws Main\ArgumentException
-     * @throws Main\ArgumentNullException
      */
     private function createInvoicePayment(Payment $payment, Request $request, $params)
     {
@@ -462,7 +467,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      */
     private static function encode(array $data)
     {
-        if (version_compare(phpversion(), '7.1', '>=')) {
+        if (PHP_VERSION >= 70100) {
             ini_set('serialize_precision', -1);
         }
         return Json::encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_IGNOR);
@@ -472,7 +477,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      * @param string $data
      * @return mixed
      */
-    private static function decode($data)
+    private static function decode(string $data)
     {
         try {
             return Json::decode($data);
@@ -485,25 +490,24 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      * @param Payment $payment
      * @return array
      */
-    private function getHeaders_v3(Payment $payment)
+    private function getHeaders_v3(Payment $payment): array
     {
-        $headers = [
+        return [
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
             'User-Agent' => $this->getUserAgent(),
             'Authorization' => 'Bearer ' . $this->getBusinessValue($payment, 'INVOICEBOX_AUTH_TOKEN'),
         ];
-
-        return $headers;
     }
 
     /**
+     * @param Payment $payment
      * @param array $params
      * @return array
      */
-    private function getBodyRequest_v3(Payment $payment, array $params)
+    private function getBodyRequest_v3(Payment $payment, array $params): array
     {
-        $body = [
+        return [
             'merchantId' => $params['INVOICEBOX_MERCHANT_ID'],
             'merchantOrderId' => (string)$params['ORDERID'],
             'amount' => (float)htmlspecialcharsbx(number_format($params['PAYMENT_SHOULD_PAY'], 2, '.', '')),
@@ -524,12 +528,10 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 'registrationAddress' => $params['BUYER_PERSON_REGISTR_ADDRESS'] ?? '',
             ],
             "basketItems" => $params['BASKET_ITEMS_PREPARED'],
-        ]; //
-
-        return $body;
+        ];
     }
 
-    private static function getVATData($item, $addType)
+    private static function getVATData($item, $addType): array
     {
         $arRes = [];
         $arRes['vatCode'] = self::VAT_NO;
@@ -566,7 +568,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         return $arRes;
     }
 
-    private static function calculateVATData($item, $vatCode, $addType)
+    private static function calculateVATData($item, $vatCode, $addType): array
     {
         $arRes = [];
         $vatRate = self::VATRATE_NO;
@@ -593,7 +595,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     {
         $arVAT = \CCatalogVat::GetByID($vatId)->Fetch();
 
-        $rate = intval($arVAT['RATE']);
+        $rate = (int)$arVAT['RATE'];
         switch ($rate) {
             case  0:
                 if (mb_strtolower($arVAT['NAME']) === GetMessage('INVOICEBOX_WITHOUT_VAT')) {
@@ -620,7 +622,6 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 $vatRate = self::VATRATE_NO;
                 break;
         }
-        return true;
     }
 
     private static function convertVATFromVatCode($vatCode, &$vatRate, &$rate)
@@ -652,8 +653,6 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 $vatRate = self::VATRATE_NO;
                 break;
         }
-
-        return true;
     }
 
 
@@ -748,7 +747,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      * @param $version
      * @return bool
      */
-    private function isCorrectHash(Payment $payment, Request $request, $version)
+    private function isCorrectHash(Payment $payment, Request $request, $version): bool
     {
         switch ($version) {
             case self::PAYMENT_VERSION_2:
@@ -821,6 +820,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 return false;
                 break;
         }
+        return false;
     }
 
     /**
@@ -828,7 +828,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      * @param float $amount
      * @return bool
      */
-    private function isCorrectSum(Payment $payment, float $amount)
+    private function isCorrectSum(Payment $payment, float $amount): bool
     {
         $sum = PriceMaths::roundByFormatCurrency($amount, $payment->getField('CURRENCY'));
         $paymentSum = PriceMaths::roundByFormatCurrency(
@@ -860,7 +860,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      * @param Payment $payment
      * @return bool
      */
-    private function isNotPaid(Payment $payment)
+    private function isNotPaid(Payment $payment): bool
     {
         if ($payment->isPaid()) {
             if ($this->service->getField('PAY_SYSTEM_ID') !== $payment->getPaySystem()) {
@@ -949,6 +949,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     /**
      * @param Payment $payment
      * @param Request $request
+     * @param $version
      * @return PaySystem\ServiceResult
      */
     private function processNoticeAction(Payment $payment, Request $request, $version)
@@ -956,8 +957,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         $result = new PaySystem\ServiceResult();
         $amount = 0;
         $curr = 'RUB';
-        $bPay = false;
         $invoiceId = "";
+        $psStatusDescription = "";
 
         switch ($version) {
             case self::PAYMENT_VERSION_2:
@@ -998,7 +999,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         // Test requests
         if ($invoiceId && in_array($invoiceId, self::TEST_ORDER)) {
             return $result;
-        }; //
+        }
 
         $fields = array(
             "PS_STATUS" => "Y",
@@ -1035,7 +1036,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      * @param Payment $payment
      * @return bool
      */
-    protected function isTestMode(Payment $payment = null)
+    protected function isTestMode(Payment $payment = null): bool
     {
         return ($this->getBusinessValue($payment, 'PS_IS_TEST') == 'Y');
     }
@@ -1060,7 +1061,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             $APPLICATION->RestartBuffer();
             Header("User-Agent: " . $this->getUserAgent());
             echo 'OK';
-        };
+        }
     }
 
     /**
