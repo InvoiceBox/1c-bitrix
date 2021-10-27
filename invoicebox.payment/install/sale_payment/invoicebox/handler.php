@@ -196,7 +196,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             ) : self::VERSION_UNKNOWN) . ' (Invoicebox ' . self::VERSION . ')';
     }
 
-    public function setPreparedBasketItems($paymentCollection, &$extraParams)
+    public function setPreparedBasketItems($payment, $paymentCollection, &$extraParams)
     {
         $result = [];
 
@@ -312,7 +312,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
 
         $extraParams = $this->getPreparedParams($payment, $request, $version);
 
-        $this->setPreparedBasketItems($paymentCollection, $extraParams);
+        $this->setPreparedBasketItems($payment, $paymentCollection, $extraParams);
 
         $this->setExtraParams($extraParams);
 
@@ -806,6 +806,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                     );
                     return false;
                 }
+                break;
             case self::PAYMENT_VERSION_3:
                 $inputStream = static::readFromStream();
                 $apiKey = $this->getBusinessValue($payment, 'INVOICEBOX_NOTIFICATION_TOKEN_V3');
@@ -818,6 +819,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                     return true;
                 }
                 return false;
+                break;
         }
     }
 
