@@ -1070,8 +1070,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     public static function getHandlerModeList()
     {
         return array(
-            static::PAYMENT_VERSION_2 => Loc::getMessage('SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOKOL_2'),
-            static::PAYMENT_VERSION_3 => Loc::getMessage('SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOKOL_3'),
+            static::PAYMENT_VERSION_2 => Loc::getMessage('SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOCOL_2'),
+            static::PAYMENT_VERSION_3 => Loc::getMessage('SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOCOL_3'),
         );
     }
 }

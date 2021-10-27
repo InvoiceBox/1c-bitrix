@@ -18,9 +18,9 @@ $MESS['SALE_HPS_INVOICEBOX_LOG_REQUEST_AMOUNT_IS_NOT_VALID'] = 'несоответствует 
 $MESS['SALE_HPS_INVOICEBOX_LOG_REQUEST_IS_OTHER_PAYMENT_PAYED'] = 'заказ был оплачен другой платежной системой';
 $MESS['SALE_HPS_INVOICEBOX_LOG_ORDER_IS_PAY'] = 'заказ успешно оплачен';
 
-$MESS["SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOKOL"] = "Версия протокола";
-$MESS["SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOKOL_2"] = "Инвойсбокс v2";
-$MESS["SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOKOL_3"] = "Инвойсбокс v3";
+$MESS["SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOCOL"] = "Версия протокола";
+$MESS["SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOCOL_2"] = "Инвойсбокс v2 (текущий)";
+$MESS["SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOCOL_3"] = "Инвойсбокс v3";
 $MESS["MEASURE_NAME_DEFAULT"] = "шт.";
 $MESS["MEASURE_CODE_DEFAULT"] = 796;
 
@@ -39,9 +39,9 @@ $MESS["INVOICEBOX_ERROR"] = 'Ошибка оплаты';
 
 $MESS["INVOICEBOX_STATUS_created"] = 'Статус платежа: новый';
 $MESS["INVOICEBOX_STATUS_expired"] = 'Ошибка оплаты: дата платежа просрочена';
-$MESS["INVOICEBOX_STATUS_processing"] = 'Ожидайте, платеж в обработке';
+$MESS["INVOICEBOX_STATUS_processing"] = 'Ожидайте, платёж в обработке';
 $MESS["INVOICEBOX_STATUS_processing-error"] = 'Ошибка оплаты: проблема с обработкой';
-$MESS["INVOICEBOX_STATUS_completed"] = 'Статус платежа: завершен';
-$MESS["INVOICEBOX_STATUS_canceled"] = 'Статус платежа: отменен';
+$MESS["INVOICEBOX_STATUS_completed"] = 'Статус платежа: завершён';
+$MESS["INVOICEBOX_STATUS_canceled"] = 'Статус платежа: отменён';
 
 $MESS["INVOICEBOX_WITHOUT_VAT"] = 'без ндс';

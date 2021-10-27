@@ -18,10 +18,10 @@ $MESS['SALE_HPS_INVOICEBOX_LOG_REQUEST_AMOUNT_IS_NOT_VALID'] = 'the payment amou
 $MESS['SALE_HPS_INVOICEBOX_LOG_ORDER_IS_PAY'] = 'order successfully paid';
 $MESS['SALE_HPS_INVOICEBOX_LOG_REQUEST_IS_OTHER_PAYMENT_PAYED'] = 'order was paid for by another payment system';
 
-$MESS["SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOKOL"] = "Protocol version";
-$MESS["SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOKOL_2"] = "Invoicebox v2";
-$MESS["SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOKOL_3"] = "Invoicebox v3";
-$MESS["MEASURE_NAME_DEFAULT"] = "шт.";
+$MESS["SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOCOL"] = "Protocol version";
+$MESS["SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOCOL_2"] = "Invoicebox v2 (current)";
+$MESS["SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOCOL_3"] = "Invoicebox v3";
+$MESS["MEASURE_NAME_DEFAULT"] = "item";
 $MESS["MEASURE_CODE_DEFAULT"] = 796;
 
 $MESS["INVOICEBOX_CODE_ERROR_unauthorized"] = 'The request is not authorized. Perhaps, the request did not specify or indicate incorrect authorization data.';
