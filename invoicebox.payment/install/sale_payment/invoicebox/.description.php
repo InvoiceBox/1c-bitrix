@@ -31,7 +31,7 @@ $arTypePayment = [
     'full_payment' => Loc::getMessage('SALE_HPS_INVOICEBOX_PAYMENT_TYPE_FULL_PAYMENT'),
 ];
 
-$arTypeNDS = [
+$arTypeVAT = [
     'NONE' => Loc::getMessage('SALE_HPS_INVOICEBOX_RUS_VAT_NONE'),
     'RUS_VAT0' => Loc::getMessage('SALE_HPS_INVOICEBOX_RUS_VAT0'),
     'RUS_VAT10' => Loc::getMessage('SALE_HPS_INVOICEBOX_RUS_VAT10'),
@@ -109,7 +109,7 @@ $data = array(
                 'TYPE' => 'ENUM',
                 'VALUE' => 'RUS_VAT20',
                 'OPTIONS' => array_merge(
-                    $arTypeNDS,
+                    $arTypeVAT,
                     [
                         'SETTINGS_BASKET' => Loc::getMessage(
                             'SALE_HPS_INVOICEBOX_RUS_VAT_SETTINGS_BASKET'
@@ -137,7 +137,7 @@ $data = array(
                 'TYPE' => 'ENUM',
                 'VALUE' => 'RUS_VAT20',
                 'OPTIONS' => array_merge(
-                    $arTypeNDS,
+                    $arTypeVAT,
                     [
                         'SETTINGS_DELIVERY' => Loc::getMessage(
                             'SALE_HPS_INVOICEBOX_RUS_VAT_SETTINGS_DELIVERY'

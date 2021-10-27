@@ -44,4 +44,4 @@ $MESS["INVOICEBOX_STATUS_processing-error"] = 'Payment error: processing problem
 $MESS["INVOICEBOX_STATUS_completed"] = 'Payment status: completed';
 $MESS["INVOICEBOX_STATUS_canceled"] = 'Payment status: canceled';
 
-$MESS["INVOICEBOX_WITHOUT_NDS"] = 'without VAT';
+$MESS["INVOICEBOX_WITHOUT_VAT"] = 'without VAT';

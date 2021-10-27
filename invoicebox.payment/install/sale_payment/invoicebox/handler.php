@@ -46,12 +46,12 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         'ffffffff-ffff-ffff-ffff-ffffffffffff'
     ];
 
-    const NDS_NO = 'NONE';
-    const NDS_0 = 'RUS_VAT0';
-    const NDS_10 = 'RUS_VAT10';
-    const NDS_20 = 'RUS_VAT20';
-    const NDS_10_110 = 'RUS_VAT110';
-    const NDS_20_120 = 'RUS_VAT120';
+    const VAT_NO = 'NONE';
+    const VAT_0 = 'RUS_VAT0';
+    const VAT_10 = 'RUS_VAT10';
+    const VAT_20 = 'RUS_VAT20';
+    const VAT_10_110 = 'RUS_VAT110';
+    const VAT_20_120 = 'RUS_VAT120';
 
     const VATRATE_NO = 6;
     const VATRATE_0 = 5;
@@ -221,9 +221,9 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             $basketField = $basketItem->getFields();
 
             if ($extraParams['INVOICEBOX_VAT_RATE_BASKET'] == 'SETTINGS_BASKET') {
-                $arDataWithNDS = self::getNDSData($basketItem, 'product');
+                $arDataWithVAT = self::getVATData($basketItem, 'product');
             } else {
-                $arDataWithNDS = self::calculateNDSData(
+                $arDataWithVAT = self::calculateVATData(
                     $basketItem,
                     $extraParams['INVOICEBOX_VAT_RATE_BASKET'],
                     'product'
@@ -243,9 +243,9 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                     'type' => $extraParams['INVOICEBOX_TYPE_BASKET'] ?? 'commodity',
                     'paymentType' => $extraParams['INVOICEBOX_PAYMENT_TYPE'] ?? 'full_prepayment',
                 ],
-                $arDataWithNDS
+                $arDataWithVAT
             );
-            $totalVat += $arDataWithNDS['totalVatAmount'];
+            $totalVat += $arDataWithVAT['totalVatAmount'];
             $totalAmount += $amount;
         }
 
@@ -257,9 +257,9 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 }
 
                 if ($extraParams['INVOICEBOX_VAT_RATE_DELIVERY'] == 'SETTINGS_DELIVERY') {
-                    $arDataWithNDS = self::getNDSData($shipment, 'delivery');
+                    $arDataWithVAT = self::getVATData($shipment, 'delivery');
                 } else {
-                    $arDataWithNDS = self::calculateNDSData(
+                    $arDataWithVAT = self::calculateVATData(
                         $shipment,
                         $extraParams['INVOICEBOX_VAT_RATE_DELIVERY'],
                         'delivery'
@@ -279,9 +279,9 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                         'type' => $extraParams['INVOICEBOX_TYPE_DELIVERY'] ?? 'service',
                         'paymentType' => $extraParams['INVOICEBOX_PAYMENT_TYPE'] ?? 'full_prepayment',
                     ],
-                    $arDataWithNDS
+                    $arDataWithVAT
                 );
-                $totalVat += $arDataWithNDS['totalVatAmount'];
+                $totalVat += $arDataWithVAT['totalVatAmount'];
                 $totalAmount += $amount;
             }
         }
@@ -525,19 +525,19 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         return $body;
     }
 
-    private static function getNDSData($item, $addType)
+    private static function getVATData($item, $addType)
     {
         $arRes = [];
-        $arRes['vatCode'] = self::NDS_NO;
+        $arRes['vatCode'] = self::VAT_NO;
         $arRes['vatRate'] = self::VATRATE_NO;
 
         if ($addType == 'product') {
             if (\Bitrix\Main\Loader::includeModule('catalog')) {
-                $arNDS = \CCatalogProduct::GetVATInfo($item->getProductId())->Fetch();
-                if (isset($arNDS['ID'])) {
+                $arVAT = \CCatalogProduct::GetVATInfo($item->getProductId())->Fetch();
+                if (isset($arVAT['ID'])) {
                     $vatCode = $arRes['vatCode'];
                     $vatRate = $arRes['vatRate'];
-                    self::convertNDSFromVatId($arNDS['ID'], $vatRate, $vatCode);
+                    self::convertVATFromVatId($arVAT['ID'], $vatRate, $vatCode);
                     $arRes['vatCode'] = $vatCode;
                     $arRes['vatRate'] = $vatRate;
                 }
@@ -550,7 +550,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             if (!empty($delivery['VAT_ID'])) {
                 $vatCode = $arRes['vatCode'];
                 $vatRate = $arRes['vatRate'];
-                self::convertNDSFromVatId($delivery['VAT_ID'], $vatRate, $vatCode);
+                self::convertVATFromVatId($delivery['VAT_ID'], $vatRate, $vatCode);
                 $arRes['vatCode'] = $vatCode;
                 $arRes['vatRate'] = $vatRate;
             }
@@ -562,12 +562,12 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         return $arRes;
     }
 
-    private static function calculateNDSData($item, $vatCode, $addType)
+    private static function calculateVATData($item, $vatCode, $addType)
     {
         $arRes = [];
         $vatRate = self::VATRATE_NO;
         $rate = 0;
-        self::convertNDSFromVatCode($vatCode, $vatRate, $rate);
+        self::convertVATFromVatCode($vatCode, $vatRate, $rate);
 
         $arRes['vatCode'] = $vatCode;
         $arRes['vatRate'] = $vatRate;
@@ -585,60 +585,60 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         return $arRes;
     }
 
-    private static function convertNDSFromVatId($vatId, &$vatRate, &$vatCode)
+    private static function convertVATFromVatId($vatId, &$vatRate, &$vatCode)
     {
-        $arNDS = \CCatalogVat::GetByID($vatId)->Fetch();
+        $arVAT = \CCatalogVat::GetByID($vatId)->Fetch();
 
-        $rate = intval($arNDS['RATE']);
+        $rate = intval($arVAT['RATE']);
         switch ($rate) {
             case  0:
-                if (mb_strtolower($arNDS['NAME']) === GetMessage('INVOICEBOX_WITHOUT_NDS')) {
-                    $vatCode = self::NDS_NO;
+                if (mb_strtolower($arVAT['NAME']) === GetMessage('INVOICEBOX_WITHOUT_VAT')) {
+                    $vatCode = self::VAT_NO;
                     $vatRate = self::VATRATE_NO;
                 } else {
-                    $vatCode = self::NDS_0;
+                    $vatCode = self::VAT_0;
                     $vatRate = self::VATRATE_0;
                 }
                 break;
 
             case 10:
-                $vatCode = self::NDS_10;
+                $vatCode = self::VAT_10;
                 $vatRate = self::VATRATE_10_110;
                 break;
 
             case 20:
-                $vatCode = self::NDS_20;
+                $vatCode = self::VAT_20;
                 $vatRate = self::VATRATE_20_120;
                 break;
 
             default:
-                $vatCode = self::NDS_NO;
+                $vatCode = self::VAT_NO;
                 $vatRate = self::VATRATE_NO;
                 break;
         }
         return true;
     }
 
-    private static function convertNDSFromVatCode($vatCode, &$vatRate, &$rate)
+    private static function convertVATFromVatCode($vatCode, &$vatRate, &$rate)
     {
         $rate = 0;
         $vatRate = self::VATRATE_NO;
 
         switch ($vatCode) {
-            case self::NDS_NO:
+            case self::VAT_NO:
                 break;
-            case self::NDS_0:
+            case self::VAT_0:
                 $rate = 0;
                 $vatRate = self::VATRATE_0;
                 break;
-            case self::NDS_10:
-            case self::NDS_10_110:
+            case self::VAT_10:
+            case self::VAT_10_110:
                 $rate = 10;
                 $vatRate = self::VATRATE_10_110;
                 break;
 
-            case self::NDS_20:
-            case self::NDS_20_120:
+            case self::VAT_20:
+            case self::VAT_20_120:
                 $rate = 20;
                 $vatRate = self::VATRATE_20_120;
                 break;

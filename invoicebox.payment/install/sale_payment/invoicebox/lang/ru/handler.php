@@ -44,4 +44,4 @@ $MESS["INVOICEBOX_STATUS_processing-error"] = 'Ошибка оплаты: проблема с обработ
 $MESS["INVOICEBOX_STATUS_completed"] = 'Статус платежа: завершен';
 $MESS["INVOICEBOX_STATUS_canceled"] = 'Статус платежа: отменен';
 
-$MESS["INVOICEBOX_WITHOUT_NDS"] = 'без ндс';
+$MESS["INVOICEBOX_WITHOUT_VAT"] = 'без ндс';
