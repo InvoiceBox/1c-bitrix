@@ -16,7 +16,7 @@ Loc::loadMessages(__FILE__);
     <input type="hidden" name="itransfer_participant_ident"
            value="<?= htmlspecialcharsbx($params['INVOICEBOX_PARTICIPANT_IDENT']); ?>"/>
     <input type="hidden" name="itransfer_participant_sign" value="<?= $params['SIGNATURE_VALUE']; ?>"/>
-    <input type="hidden" name="itransfer_cms_name" value="1C-Bitrix/<?= $params['SM_VERSION']; ?> (Invoicebox <?= $params["VERSION"]; ?>)"/>
+    <input type="hidden" name="itransfer_cms_name" value="<?= $params['USER_AGENT']; ?>"/>
     <input type="hidden" name="itransfer_order_id" value="<?= htmlspecialcharsbx($params['PAYMENT_ID']); ?>"/>
     <input type="hidden" name="itransfer_order_amount"
            value="<?= htmlspecialcharsbx(number_format($params['PAYMENT_SHOULD_PAY'], 2, '.', '')); ?>"/>

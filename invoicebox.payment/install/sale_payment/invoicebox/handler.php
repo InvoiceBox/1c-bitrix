@@ -189,6 +189,13 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         return isset($params['PS_IS_DEFFERED_PAYMENT']) && !empty($params['PS_IS_DEFFERED_PAYMENT']['VALUE']) ? $params['PS_IS_DEFFERED_PAYMENT']['VALUE'] : false;
     }
 
+    public function getUserAgent()
+    {
+        return 'Bitrix/' . (defined('SM_VERSION') ? constant(
+                "SM_VERSION"
+            ) : self::VERSION_UNKNOWN) . ' (Invoicebox ' . self::VERSION . ')';
+    }
+
     public function setPreparedBasketItems($paymentCollection, &$extraParams)
     {
         $result = [];
@@ -196,8 +203,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         /** @var \Bitrix\Sale\Order $order */
         $order = $paymentCollection->getOrder();
 
-        $extraParams["SM_VERSION"] = (defined('SM_VERSION') ? constant("SM_VERSION") : self::VERSION_UNKNOWN);
-        $extraParams["VERSION"] = self::VERSION;
+        $extraParams["USER_AGENT"] = $this->getUserAgent();
         $extraParams["BASKET_ITEMS"] = $order->getBasket();
         $extraParams["DELIVERY_PRICE"] = $order->getDeliveryPrice();
 
@@ -484,9 +490,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         $headers = [
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
-            'User-Agent' => 'Bitrix/' . (defined('SM_VERSION') ? constant(
-                    "SM_VERSION"
-                ) : self::VERSION_UNKNOWN) . ' (Invoicebox ' . self::VERSION . ')',
+            'User-Agent' => $this->getUserAgent(),
             'Authorization' => 'Bearer ' . $this->getBusinessValue($payment, 'INVOICEBOX_AUTH_TOKEN'),
         ];
 
@@ -1052,6 +1056,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         global $APPLICATION;
         if ($result->isResultApplied()) {
             $APPLICATION->RestartBuffer();
+            Header("User-Agent: " . $this->getUserAgent());
             echo 'OK';
         };
     }
