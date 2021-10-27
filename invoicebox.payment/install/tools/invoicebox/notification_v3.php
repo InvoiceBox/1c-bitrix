@@ -18,6 +18,7 @@ global $APPLICATION;
 Loc::loadMessages(__FILE__);
 
 $arAnswer = ['status' => 'error', 'code' => 'out_of_service'];
+$userAgent = "";
 
 if (CModule::IncludeModule("sale")) {
     $context = Application::getInstance()->getContext();
@@ -32,6 +33,7 @@ if (CModule::IncludeModule("sale")) {
             $service = new PaySystem\Service($item);
 
             if ($service instanceof PaySystem\Service) {
+		$userAgent = $service->getUserAgent();
                 $result = $service->processRequest($request);
                 if (!$result->isSuccess()) {
                     $arError = $result->getErrorMessages();
@@ -52,5 +54,9 @@ if (CModule::IncludeModule("sale")) {
 }
 
 $APPLICATION->RestartBuffer();
+if ( $userAgent )
+{
+	Header("User-Agent: " . $userAgent);
+}; //
 $APPLICATION->FinalActions(json_encode($arAnswer,JSON_HEX_TAG | JSON_UNESCAPED_UNICODE));
 die();
