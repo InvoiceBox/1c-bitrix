@@ -180,7 +180,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         return false;
     }
 
-    //Проверяем нужно ли подтверждение заказа
+    // Проверяем нужно ли подтверждение заказа
     protected function isDefferedPayment()
     {
         $options = \CSalePaySystemAction::GetList([], ['ACTION_FILE' => 'invoicebox'])->Fetch();
@@ -331,7 +331,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 }
                 $result = $this->initiatePayInternal($payment, $request, $extraParams);
                 if (!$result->isSuccess()) {
-                    $error = 'Invoicebox v3: initiatePay order#' . $payment->getField('ORDER_ID') . ' :' . join(
+                    $error = 'Invoicebox v3: initiatePay order#' . $payment->getField('ORDER_ID') . ' :' . implode(
                             '\n',
                             $result->getErrorMessages()
                         );
@@ -369,8 +369,6 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             'SUM' => PriceMaths::roundPrecision($payment->getSum()),
         );
         $this->setExtraParams($params);
-
-        $template = "template";
 
         $showTemplateResult = $this->showTemplate($payment, 'template_v3');
         if ($showTemplateResult->isSuccess()) {
@@ -681,7 +679,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      * @param $paySystemId
      * @return bool
      */
-    static protected function isMyResponseExtended(Request $request, $paySystemId)
+    protected static function isMyResponseExtended(Request $request, $paySystemId)
     {
         return true;
     }
@@ -714,14 +712,11 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             && $paySystemResult['PS_MODE'] === self::PAYMENT_VERSION_2
         ) {
             return true;
-        } else {
-            $inputStream = static::readFromStream();
-            if (static::isJSON($inputStream) && $paySystemResult['PS_MODE'] === self::PAYMENT_VERSION_3) {
-                if (static::decode($inputStream) === false) {
-                    return false;
-                }
-                return true;
-            }
+        }
+
+        $inputStream = static::readFromStream();
+        if (static::isJSON($inputStream) && $paySystemResult['PS_MODE'] === self::PAYMENT_VERSION_3) {
+            return !(static::decode($inputStream) === false);
         }
 
         return false;
@@ -743,7 +738,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
 
     /**
      * @param Payment $payment
-     * @param $request
+     * @param Request $request
      * @param $version
      * @return bool
      */
@@ -787,24 +782,25 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
 
                 if (ToUpper($sign_crcA) == ToUpper($request->get('sign'))) {
                     return true;
-                } else {
-                    CEventLog::Add(
-                        [
-                            'SEVERITY' => 'INFO',
-                            'AUDIT_TYPE_ID' => 'INVOICE_PAYMENT_LOG',
-                            'MODULE_ID' => 'invoicebox.payment',
-                            'DESCRIPTION' => json_encode(
-                                [
-                                    'error' => Loc::getMessage(
-                                        'SALE_HPS_INVOICEBOX_LOG_MODULE_IS_ERROR_API_KEY_IN_REQUEST'
-                                    )
-                                ],
-                                JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
-                            ),
-                        ]
-                    );
-                    return false;
                 }
+
+                CEventLog::Add(
+                    [
+                        'SEVERITY' => 'INFO',
+                        'AUDIT_TYPE_ID' => 'INVOICE_PAYMENT_LOG',
+                        'MODULE_ID' => 'invoicebox.payment',
+                        'DESCRIPTION' => json_encode(
+                            [
+                                'error' => Loc::getMessage(
+                                    'SALE_HPS_INVOICEBOX_LOG_MODULE_IS_ERROR_API_KEY_IN_REQUEST'
+                                )
+                            ],
+                            JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
+                        ),
+                    ]
+                );
+
+                return false;
                 break;
             case self::PAYMENT_VERSION_3:
                 $inputStream = static::readFromStream();
@@ -838,22 +834,23 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
 
         if ($paymentSum == $sum) {
             return true;
-        } else {
-            CEventLog::Add(
-                [
-                    'SEVERITY' => 'INFO',
-                    'AUDIT_TYPE_ID' => 'INVOICE_PAYMENT_LOG',
-                    'MODULE_ID' => 'invoicebox.payment',
-                    'DESCRIPTION' => json_encode(
-                        [
-                            'error' => Loc::getMessage('SALE_HPS_INVOICEBOX_LOG_REQUEST_AMOUNT_IS_NOT_VALID')
-                        ],
-                        JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
-                    ),
-                ]
-            );
-            return false;
         }
+
+        CEventLog::Add(
+            [
+                'SEVERITY' => 'INFO',
+                'AUDIT_TYPE_ID' => 'INVOICE_PAYMENT_LOG',
+                'MODULE_ID' => 'invoicebox.payment',
+                'DESCRIPTION' => json_encode(
+                    [
+                        'error' => Loc::getMessage('SALE_HPS_INVOICEBOX_LOG_REQUEST_AMOUNT_IS_NOT_VALID')
+                    ],
+                    JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
+                ),
+            ]
+        );
+
+        return false;
     }
 
     /**
@@ -862,23 +859,21 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      */
     private function isNotPaid(Payment $payment): bool
     {
-        if ($payment->isPaid()) {
-            if ($this->service->getField('PAY_SYSTEM_ID') !== $payment->getPaySystem()) {
-                CEventLog::Add(
-                    [
-                        'SEVERITY' => 'INFO',
-                        'AUDIT_TYPE_ID' => 'INVOICE_PAYMENT_LOG',
-                        'MODULE_ID' => 'invoicebox.payment',
-                        'DESCRIPTION' => json_encode(
-                            [
-                                'error' => Loc::getMessage('SALE_HPS_INVOICEBOX_LOG_REQUEST_IS_OTHER_PAYMENT_PAYED')
-                            ],
-                            JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
-                        ),
-                    ]
-                );
-                return false;
-            }
+        if ($payment->isPaid() && $this->service->getField('PAY_SYSTEM_ID') !== $payment->getPaySystem()) {
+            CEventLog::Add(
+                [
+                    'SEVERITY' => 'INFO',
+                    'AUDIT_TYPE_ID' => 'INVOICE_PAYMENT_LOG',
+                    'MODULE_ID' => 'invoicebox.payment',
+                    'DESCRIPTION' => json_encode(
+                        [
+                            'error' => Loc::getMessage('SALE_HPS_INVOICEBOX_LOG_REQUEST_IS_OTHER_PAYMENT_PAYED')
+                        ],
+                        JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
+                    ),
+                ]
+            );
+            return false;
         }
         return true;
     }
@@ -891,23 +886,23 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     {
         if (!is_null($request->get('participantOrderId'))) {
             return $request->get('participantOrderId');
-        } else {
-            $inputStream = static::readFromStream();
-            if ($inputStream && static::isJSON($inputStream)) {
-                $data = static::decode($inputStream);
-                if ($data === false) {
-                    return false;
-                }
+        }
 
-                return $data['merchantOrderId'];
+        $inputStream = static::readFromStream();
+        if ($inputStream && static::isJSON($inputStream)) {
+            $data = static::decode($inputStream);
+            if ($data === false) {
+                return false;
             }
 
-            return false;
+            return $data['merchantOrderId'];
         }
+
+        return false;
     }
 
     /**
-     * @return mixed
+     * @return \string[][]
      */
     protected function getUrlList()
     {
@@ -933,15 +928,15 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
 
         if ($this->isCorrectHash($payment, $request, $version)) {
             return $this->processNoticeAction($payment, $request, $version);
-        } else {
-            PaySystem\ErrorLog::add(
-                array(
-                    'ACTION' => 'processRequest',
-                    'MESSAGE' => 'Incorrect hash'
-                )
-            );
-            $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['sign']));
         }
+
+        PaySystem\ErrorLog::add(
+            array(
+                'ACTION' => 'processRequest',
+                'MESSAGE' => 'Incorrect hash'
+            )
+        );
+        $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['sign']));
 
         return $result;
     }
@@ -996,10 +991,44 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 break;
         }
 
-        // Test requests
+        // Check for test requests
         if ($invoiceId && in_array($invoiceId, self::TEST_ORDER)) {
             return $result;
         }
+
+	// Check payment status
+	if ( !$bPay )
+	{
+            PaySystem\ErrorLog::add(
+                array(
+                    'ACTION' => 'processNoticeAction',
+                    'MESSAGE' => 'Unknown order status'
+                )
+            );
+            $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['not_found']));
+	    return $result;
+	}
+
+	// Check amount
+        if (!$this->isCorrectSum($payment, $amount)) {
+            PaySystem\ErrorLog::add(
+                array(
+                    'ACTION' => 'processNoticeAction',
+                    'MESSAGE' => 'Incorrect sum'
+                )
+            );
+            $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['amount']));
+	    return $result;
+	}
+
+	// Check currency
+	// ToDo: check order currency
+
+	// Check if order paid by other payment system
+	if (!$this->isNotPaid($payment)) {
+            $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['paid']));
+	    return $result;
+	}
 
         $fields = array(
             "PS_STATUS" => "Y",
@@ -1012,22 +1041,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         );
 
         $result->setPsData($fields);
-
-        if ($this->isCorrectSum($payment, $amount)) {
-            if ($version === self::PAYMENT_VERSION_3 && !$this->isNotPaid($payment)) {
-                $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['paid']));
-            } else {
-                $result->setOperationType(PaySystem\ServiceResult::MONEY_COMING);
-            }
-        } else {
-            PaySystem\ErrorLog::add(
-                array(
-                    'ACTION' => 'processNoticeAction',
-                    'MESSAGE' => 'Incorrect sum'
-                )
-            );
-            $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['amount']));
-        }
+        $result->setOperationType(PaySystem\ServiceResult::MONEY_COMING);
 
         return $result;
     }
