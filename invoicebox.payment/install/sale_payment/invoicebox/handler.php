@@ -36,6 +36,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     const NOTIFICATION_ERROR_CODE = [
         'other' => 'out_of_service',
         'amount' => 'order_wrong_amount',
+        'currency' => 'order_wrong_currency',
         'paid' => 'order_already_paid',
         'not_found' => 'order_not_found',
         'sign' => 'signature_error',
@@ -742,7 +743,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      * @param $version
      * @return bool
      */
-    private function isCorrectHash(Payment $payment, Request $request, $version): bool
+    private function isCorrectSign(Payment $payment, Request $request, $version): bool
     {
         switch ($version) {
             case self::PAYMENT_VERSION_2:
@@ -926,14 +927,14 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         $version = $this->service->getField('PS_MODE') ?: self::PAYMENT_VERSION_2;
         $result = new PaySystem\ServiceResult();
 
-        if ($this->isCorrectHash($payment, $request, $version)) {
+        if ($this->isCorrectSign($payment, $request, $version)) {
             return $this->processNoticeAction($payment, $request, $version);
         }
 
         PaySystem\ErrorLog::add(
             array(
                 'ACTION' => 'processRequest',
-                'MESSAGE' => 'Incorrect hash'
+                'MESSAGE' => 'Incorrect sign'
             )
         );
         $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['sign']));
@@ -951,7 +952,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     {
         $result = new PaySystem\ServiceResult();
         $amount = 0;
-        $curr = 'RUB';
+        $orderCurrency = 'RUB';
         $invoiceId = "";
         $psStatusDescription = "";
 
@@ -970,7 +971,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                     );
                 $amount = $request->get('amount');
                 $invoiceId = $request->get('ucode');
-                $curr = $this->getBusinessValue($payment, "PAYMENT_CURRENCY");
+                $currency = $request->get('currency');
                 $bPay = true;
                 break;
             case self::PAYMENT_VERSION_3:
@@ -984,10 +985,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                     );
                 $amount = $data['amount'];
                 $invoiceId = $data['id'];
-                $curr = $data['currencyId'];
-                if ($data['status'] === self::STATUS_COMPLETED) {
-                    $bPay = true;
-                }
+                $currency = $data['currencyId'];
+                $bPay = ($data['status'] === self::STATUS_COMPLETED);
                 break;
         }
 
@@ -996,9 +995,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             return $result;
         }
 
-	// Check payment status
-	if ( !$bPay )
-	{
+        // Check payment status
+        if (!$bPay) {
             PaySystem\ErrorLog::add(
                 array(
                     'ACTION' => 'processNoticeAction',
@@ -1006,29 +1004,33 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 )
             );
             $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['not_found']));
-	    return $result;
-	}
+            return $result;
+        }
 
-	// Check amount
+        // Check amount
         if (!$this->isCorrectSum($payment, $amount)) {
             PaySystem\ErrorLog::add(
                 array(
                     'ACTION' => 'processNoticeAction',
-                    'MESSAGE' => 'Incorrect sum'
+                    'MESSAGE' => 'Incorrect payment amount (' . $amount . ')'
                 )
             );
             $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['amount']));
-	    return $result;
-	}
+            return $result;
+        }
 
-	// Check currency
-	// ToDo: check order currency
+        // Check currency
+        // ToDo: check order/payment currency
+        if ($currency != $orderCurrency) {
+            $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['currency']));
+            return $result;
+        }
 
-	// Check if order paid by other payment system
-	if (!$this->isNotPaid($payment)) {
+        // Check if order paid by other payment system
+        if (!$this->isNotPaid($payment)) {
             $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['paid']));
-	    return $result;
-	}
+            return $result;
+        }
 
         $fields = array(
             "PS_STATUS" => "Y",
