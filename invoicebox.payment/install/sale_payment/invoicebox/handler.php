@@ -19,7 +19,7 @@ Loc::loadMessages(__FILE__);
 
 class InvoiceBoxHandler extends PaySystem\ServiceHandler
 {
-    const VERSION = '2.0.3';
+    const VERSION = '2.0.4';
     const VERSION_UNKNOWN = 'unknown';
 
     const PAYMENT_VERSION_2 = 'version_2';
@@ -32,6 +32,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     const STATUS_CREATED = 'created';
     const STATUS_CANCELED = 'canceled';
     const STATUS_COMPLETED = 'completed';
+
+    const OBJECT_TYPE_FIELD = 'IB_OBJECT_TYPE';
 
     const NOTIFICATION_ERROR_CODE = [
         'other' => 'out_of_service',
@@ -173,12 +175,9 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
 
     protected function successPay($payment, $order): bool
     {
-        if (!$this->isDefferedPayment() || ($this->isDefferedPayment() && $order->getField(
+        return !$this->isDefferedPayment() || ($this->isDefferedPayment() && $order->getField(
                     'STATUS_ID'
-                ) == $this->isDefferedPayment())) {
-            return true;
-        }
-        return false;
+                ) == $this->isDefferedPayment());
     }
 
     // Проверяем нужно ли подтверждение заказа
@@ -200,6 +199,88 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         return 'Bitrix/' . (defined('SM_VERSION') ? constant(
                 "SM_VERSION"
             ) : self::VERSION_UNKNOWN) . ' (Invoicebox ' . self::VERSION . ')';
+    }
+
+    public static function getIblockElement($iblockElementId)
+    {
+        $arOrder = [];
+        $arFilter = ['ID' => $iblockElementId];
+        $arGroupBy = false;
+        $arNavStartParams = false;
+        $arSelectFields = ['ID', '*'];
+
+        $dbRes = \CIBlockElement::GetList(
+            $arOrder,
+            $arFilter,
+            $arGroupBy,
+            $arNavStartParams,
+            $arSelectFields
+        );
+
+        $element = $dbRes->Fetch();
+
+        $propsDbres = \CIBlockElement::GetProperty(
+            $element['IBLOCK_ID'],
+            $iblockElementId,
+            "sort",
+            "asc",
+            array(">ID" => 1)
+        );
+
+        $i = 0;
+        while ($prop = $propsDbres->GetNext()) {
+            $i = !isset(
+                $element['PROPS'][$prop['CODE']]
+            ) ? 0 : $i + 1;
+            $element['PROPS'][$prop['CODE']]['NAME'] = $prop['NAME'];
+            $element['PROPS'][$prop['CODE']]['TYPE'] = $prop['PROPERTY_TYPE'];
+            $element['PROPS'][$prop['CODE']]['ACTIVE'] = $prop['ACTIVE'];
+
+            $element['PROPS'][$prop['CODE']]['VALUES'][$i] = [
+                'VALUE' => $prop['VALUE'],
+                'DESCRIPTION' => $prop['DESCRIPTION'],
+            ];
+
+            if ($prop['PROPERTY_TYPE'] == 'F') {
+                $element['PROPS'][$prop['CODE']]['VALUE'][$i]['PATH'] = \CFile::GetPath((int)$prop['VALUE']);
+            }
+        }
+
+        return $element;
+    }
+
+    public function getBasketItemProductPropValue($basketItem, $propIdent)
+    {
+        \Bitrix\Main\Loader::IncludeModule("catalog");
+        \Bitrix\Main\Loader::IncludeModule("iblock");
+
+        $result = "";
+
+        $product = $basketItem->getFieldValues();
+        $mxResult = \CCatalogSku::GetProductInfo($product["PRODUCT_ID"]);
+
+        if (is_array($mxResult)) {
+            $productId = $mxResult['ID'];
+            $iBlock = $this->getIblockElement($productId);
+            $propertyId = isset($iBlock["PROPS"][$propIdent])
+            && isset($iBlock["PROPS"][$propIdent]["VALUES"][0]["VALUE"]) ?
+                $iBlock["PROPS"][$propIdent]["VALUES"][0]["VALUE"] : false;
+
+            $properties = \CIBlockProperty::GetList(
+                array("sort" => "asc", "name" => "asc"),
+                array("ACTIVE" => "Y", "CODE" => $propIdent, "PROPERTY_TYPE" => "L")
+            ); //
+            while ($ob = $properties->GetNext()) {
+                $ibpenum = new \CIBlockPropertyEnum;
+                $enum = $ibpenum->GetList(array("sort" => "asc", "name" => "asc"), array("ID" => $propertyId)); //
+                while ($en = $enum->GetNext()) {
+                    $result = $en["XML_ID"];
+                    break;
+                }; //
+            }; //
+        }; //
+
+        return $result;
     }
 
     public function setPreparedBasketItems($payment, $paymentCollection, &$extraParams): array
@@ -233,6 +314,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         foreach ($extraParams['BASKET_ITEMS'] as $basketItem) {
             $basketField = $basketItem->getFields();
 
+            $objectType = $this->getBasketItemProductPropValue($basketItem, self::OBJECT_TYPE_FIELD);
+
             if ($extraParams['INVOICEBOX_VAT_RATE_BASKET'] == 'SETTINGS_BASKET') {
                 $arDataWithVAT = self::getVATData($basketItem, 'product');
             } else {
@@ -253,7 +336,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                     'quantity' => (float)$basketField['QUANTITY'],
                     'amount' => number_format((float)roundEx($basketItem->getPrice(), 2), 2, '.', ''),
                     'totalAmount' => $amount,
-                    'type' => $extraParams['INVOICEBOX_TYPE_BASKET'] ?? 'commodity',
+                    'type' => ($objectType ?? ($extraParams['INVOICEBOX_TYPE_BASKET'] ?? 'commodity')),
                     'paymentType' => $extraParams['INVOICEBOX_PAYMENT_TYPE'] ?? 'full_prepayment',
                 ],
                 $arDataWithVAT
@@ -1038,7 +1121,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             "PS_STATUS_DESCRIPTION" => $psStatusDescription,
             "PS_STATUS_MESSAGE" => Loc::getMessage('SALE_HPS_INVOICEBOX_RES_PAYED'),
             "PS_SUM" => $amount,
-            "PS_CURRENCY" => $curr,
+            "PS_CURRENCY" => $currency,
             "PS_RESPONSE_DATE" => new DateTime(),
         );
 

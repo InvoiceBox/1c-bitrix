@@ -4,10 +4,15 @@ use Bitrix\Main\Localization\Loc;
 
 Loc::loadMessages(__FILE__);
 
+if (class_exists("invoicebox_payment")) {
+    return;
+}
+
 class invoicebox_payment extends CModule
 {
     const MODULE_ID = 'invoicebox.payment';
     var $MODULE_ID = 'invoicebox.payment';
+    const IB_OBJECT_TYPE = 'IB_OBJECT_TYPE';
     var $MODULE_VERSION;
     var $MODULE_VERSION_DATE;
     var $MODULE_NAME;
@@ -17,11 +22,11 @@ class invoicebox_payment extends CModule
     function __construct()
     {
         $arModuleVersion = array();
-        include(dirname(__FILE__) . "/version.php");
+        include(__DIR__ . "/version.php");
         $this->MODULE_VERSION = $arModuleVersion["VERSION"];
         $this->MODULE_VERSION_DATE = $arModuleVersion["VERSION_DATE"];
         $this->MODULE_NAME = "Invoicebox";
-        $this->MODULE_DESCRIPTION = Loc::getMessage('SALE_HPS_INVOICEBOX_MODUL_NAME');
+        $this->MODULE_DESCRIPTION = Loc::getMessage('SALE_HPS_INVOICEBOX_MODULE_NAME');
         $this->PARTNER_NAME = "Invoicebox";
         $this->PARTNER_URI = "https://www.invoicebox.ru";
     }
@@ -50,15 +55,85 @@ class invoicebox_payment extends CModule
         return true;
     }
 
+    function InstallDB()
+    {
+        if (!Loader::includeModule('sale')) {
+            return false;
+        }
+
+        if (!Loader::includeModule('catalog')) {
+            return false;
+        }
+
+        if (!Loader::includeModule('iblock')) {
+            return false;
+        }
+
+        $enumList = [
+            "commodity" => Loc::getMessage('SALE_HPS_INVOICEBOX_OBJECT_TYPE_1'),
+            "service" => Loc::getMessage('SALE_HPS_INVOICEBOX_OBJECT_TYPE_4')
+        ]; //
+
+        $rsIBlockList = GetIBlockList("catalog");
+        while ($arIBlock = $rsIBlockList->GetNext()) {
+            $property = \CIBlockProperty::GetList(
+                array("sort" => "asc", "name" => "asc"),
+                array("ACTIVE" => "Y", "CODE" => self::IB_OBJECT_TYPE, "PROPERTY_TYPE" => "L")
+            ); //
+            if (!$property->SelectedRowsCount()) {
+                $arFields = array(
+                    "NAME" => Loc::getMessage('SALE_HPS_INVOICEBOX_OBJECT_TYPE'),
+                    "HINT" => Loc::getMessage('SALE_HPS_INVOICEBOX_OBJECT_TYPE_HINT'),
+                    "ACTIVE" => "Y",
+                    "IS_REQUIRED" => "Y",
+                    "SORT" => "600",
+                    "CODE" => self::IB_OBJECT_TYPE,
+                    "PROPERTY_TYPE" => "L",
+                    "IBLOCK_ID" => $arIBlock["ID"]
+                );
+                $ibp = new \CIBlockProperty;
+                $propetryId = $ibp->Add($arFields);
+            } else {
+                $tmp = $property->GetNext();
+                $propetryId = $tmp["ID"];
+            };
+
+            $ibpenum = new \CIBlockPropertyEnum;
+            foreach ($enumList as $_xmlId => $_name) {
+                $enum = $ibpenum->GetList(
+                    array("sort" => "asc", "name" => "asc"),
+                    array("ID" => $propetryId, "XML_ID" => $_xmlId)
+                ); //
+                if (!$enum->SelectedRowsCount()) {
+                    $enumId = $ibpenum->Add(
+                        array(
+                            "IBLOCK_ID" => $arIBlock["ID"],
+                            "PROPERTY_ID" => $propetryId,
+                            "VALUE" => $_name,
+                            "XML_ID" => $_xmlId
+                        )
+                    );
+                }; //
+            }; //
+        }; //
+
+        return true;
+    }
+
+    function UnInstallDB()
+    {
+        return true;
+    }
+
     function InstallFiles($arParams = array(), $alternativePath = false)
     {
         global $APPLICATION;
         $countErr = 0;
         $pathMod = '/';
 
-        if (strpos(dirname(__FILE__), 'local') !== false) {
+        if (strpos(__DIR__, 'local') !== false) {
             $pathMod = '/local/';
-        } elseif (strpos(dirname(__FILE__), 'bitrix') !== false) {
+        } elseif (strpos(__DIR__, 'bitrix') !== false) {
             $pathMod = '/bitrix/';
         }
 
@@ -96,8 +171,11 @@ class invoicebox_payment extends CModule
             true
         );
 
+        $this->InstallDB();
+
         if ($countErr > 0) {
             $this->UnInstallFiles();
+            $this->UnInstallDB();
             return false;
         }
         return true;
@@ -107,9 +185,9 @@ class invoicebox_payment extends CModule
     {
         $pathMod = '/';
 
-        if (strpos(dirname(__FILE__), 'local') !== false) {
+        if (strpos(__DIR__, 'local') !== false) {
             $pathMod = '/local/';
-        } elseif (strpos(dirname(__FILE__), 'bitrix') !== false) {
+        } elseif (strpos(__DIR__, 'bitrix') !== false) {
             $pathMod = '/bitrix/';
         }
 
