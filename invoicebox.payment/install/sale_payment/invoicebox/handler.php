@@ -858,7 +858,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      * @param Payment $payment
      * @return bool
      */
-    private function isNotPaid(Payment $payment): bool
+    private function isPaidByOther(Payment $payment): bool
     {
         if ($payment->isPaid() && $this->service->getField('PAY_SYSTEM_ID') !== $payment->getPaySystem()) {
             CEventLog::Add(
@@ -874,9 +874,9 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                     ),
                 ]
             );
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 
     /**
@@ -1027,7 +1027,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         }
 
         // Check if order paid by other payment system
-        if (!$this->isNotPaid($payment)) {
+        if ($this->isPaidByOther($payment)) {
             $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['paid']));
             return $result;
         }
