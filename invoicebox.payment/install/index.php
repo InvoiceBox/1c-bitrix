@@ -10,9 +10,9 @@ if (class_exists("invoicebox_payment")) {
 
 class invoicebox_payment extends CModule
 {
+    const IB_OBJECT_TYPE = 'IB_OBJECT_TYPE';
     const MODULE_ID = 'invoicebox.payment';
     var $MODULE_ID = 'invoicebox.payment';
-    const IB_OBJECT_TYPE = 'IB_OBJECT_TYPE';
     var $MODULE_VERSION;
     var $MODULE_VERSION_DATE;
     var $MODULE_NAME;
@@ -25,8 +25,8 @@ class invoicebox_payment extends CModule
         include(__DIR__ . "/version.php");
         $this->MODULE_VERSION = $arModuleVersion["VERSION"];
         $this->MODULE_VERSION_DATE = $arModuleVersion["VERSION_DATE"];
-        $this->MODULE_NAME = "Invoicebox";
-        $this->MODULE_DESCRIPTION = Loc::getMessage('SALE_HPS_INVOICEBOX_MODULE_NAME');
+        $this->MODULE_NAME = Loc::getMessage('SALE_HPS_INVOICEBOX_MODULE_NAME');
+        $this->MODULE_DESCRIPTION = Loc::getMessage('SALE_HPS_INVOICEBOX_MODULE_DESCRIPTION');
         $this->PARTNER_NAME = "Invoicebox";
         $this->PARTNER_URI = "https://www.invoicebox.ru";
     }
@@ -114,8 +114,8 @@ class invoicebox_payment extends CModule
                         )
                     );
                 }; //
-            }; //
-        }; //
+            }; //enumList
+        }; //arIBlock
 
         return true;
     }

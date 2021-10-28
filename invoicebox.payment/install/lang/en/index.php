@@ -2,7 +2,8 @@
 
 $MESS['SALE_HPS_INVOICEBOX_INSTALL_ACCESS'] = 'Module cannot be installed. Check and set correct folder permissions: ';
 $MESS['SALE_HPS_INVOICEBOX_INSTALL_COPY'] = 'Module cannot be installed, module files are missing. Check the correctness of copying module files to a folder: ';
-$MESS['SALE_HPS_INVOICEBOX_MODULE_NAME'] = 'Invoicebox payment module for Bitrix CMS: "Small business", "Business" and "Bitrix24+Shop".';
+$MESS['SALE_HPS_INVOICEBOX_MODULE_NAME'] = 'Invoicebox';
+$MESS['SALE_HPS_INVOICEBOX_MODULE_DESCRIPTION'] = 'Invoicebox payment module for Bitrix CMS: "Small business", "Business" and "Bitrix24+Shop".';
 $MESS['SALE_HPS_INVOICEBOX_OBJECT_TYPE'] = 'Settlement subject';
 $MESS['SALE_HPS_INVOICEBOX_OBJECT_TYPE_HINT'] = 'Used to transfer information to the online-cashier';
 $MESS['SALE_HPS_INVOICEBOX_OBJECT_TYPE_1'] = 'Commodity (not excisable)';
