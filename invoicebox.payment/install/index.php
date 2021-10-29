@@ -33,14 +33,6 @@ class invoicebox_payment extends CModule
         $this->MODULE_VERSION_DATE = $arModuleVersion["VERSION_DATE"];
         $this->MODULE_NAME = Loc::getMessage('SALE_HPS_INVOICEBOX_MODULE_NAME');
         $this->MODULE_DESCRIPTION = Loc::getMessage('SALE_HPS_INVOICEBOX_MODULE_DESCRIPTION');
-        if (self::MODULE_LCHARSET !== 'utf-8') {
-            $this->MODULE_DESCRIPTION = $APPLICATION->ConvertCharset(
-                $this->MODULE_DESCRIPTION,
-                self::MODULE_LCHARSET,
-                "utf-8"
-            );
-            $this->MODULE_NAME = $APPLICATION->ConvertCharset($this->MODULE_NAME, self::MODULE_LCHARSET, "utf-8");
-        } //
         $this->PARTNER_NAME = "Invoicebox";
         $this->PARTNER_URI = "https://www.invoicebox.ru";
     }
@@ -115,15 +107,6 @@ class invoicebox_payment extends CModule
                 $fieldName = Loc::getMessage('SALE_HPS_INVOICEBOX_OBJECT_TYPE');
                 $fieldHint = Loc::getMessage('SALE_HPS_INVOICEBOX_OBJECT_TYPE_HINT');
 
-                if (self::MODULE_LCHARSET !== 'utf-8') {
-                    $fieldName = $APPLICATION->ConvertCharset(
-                        $fieldName,
-                        self::MODULE_LCHARSET,
-                        "utf-8"
-                    );
-                    $fieldHint = $APPLICATION->ConvertCharset($fieldHint, self::MODULE_LCHARSET, "utf-8");
-                } //
-
                 $arFields = array(
                     "NAME" => $fieldName,
                     "HINT" => $fieldHint,
@@ -143,10 +126,6 @@ class invoicebox_payment extends CModule
 
             $ibpenum = new \CIBlockPropertyEnum;
             foreach ($enumList as $_xmlId => $_name) {
-                if (self::MODULE_LCHARSET !== 'utf-8') {
-                    $_name = $APPLICATION->ConvertCharset($_name, self::MODULE_LCHARSET, "utf-8");
-                } //
-
                 $enum = $ibpenum->GetList(
                     array("sort" => "asc", "name" => "asc"),
                     array("ID" => $propetryId, "XML_ID" => $_xmlId)
