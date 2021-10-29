@@ -268,7 +268,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
 
             $properties = \CIBlockProperty::GetList(
                 array("sort" => "asc", "name" => "asc"),
-                array("ACTIVE" => "Y", "CODE" => $propIdent, "PROPERTY_TYPE" => "L")
+                array("ACTIVE" => "Y", "CODE" => $propIdent, "PROPERTY_TYPE" => "L", "IBLOCK_ID" => $mxResult["IBLOCK_ID"] )
             ); //
             while ($ob = $properties->GetNext()) {
                 $ibpenum = new \CIBlockPropertyEnum;
@@ -315,6 +315,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             $basketField = $basketItem->getFields();
 
             $objectType = $this->getBasketItemProductPropValue($basketItem, self::OBJECT_TYPE_FIELD);
+	    $objectType = ($objectType ? $objectType : ($extraParams['INVOICEBOX_TYPE_BASKET'] ?? 'commodity'));
 
             if ($extraParams['INVOICEBOX_VAT_RATE_BASKET'] == 'SETTINGS_BASKET') {
                 $arDataWithVAT = self::getVATData($basketItem, 'product');
@@ -336,7 +337,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                     'quantity' => (float)$basketField['QUANTITY'],
                     'amount' => number_format((float)roundEx($basketItem->getPrice(), 2), 2, '.', ''),
                     'totalAmount' => $amount,
-                    'type' => ($objectType ?? ($extraParams['INVOICEBOX_TYPE_BASKET'] ?? 'commodity')),
+                    'type' => $objectType,
                     'paymentType' => $extraParams['INVOICEBOX_PAYMENT_TYPE'] ?? 'full_prepayment',
                 ],
                 $arDataWithVAT

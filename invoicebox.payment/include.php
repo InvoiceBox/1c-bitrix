@@ -65,4 +65,6 @@ class CInvoicebox
         ];
     }
 
-}; //class
+}
+
+; //class
