@@ -19,7 +19,7 @@ Loc::loadMessages(__FILE__);
 
 class InvoiceBoxHandler extends PaySystem\ServiceHandler
 {
-    const VERSION = '2.0.6';
+    const VERSION = '2.0.7';
     const VERSION_UNKNOWN = 'unknown';
 
     const PAYMENT_VERSION_2 = 'version_2';
@@ -258,25 +258,29 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
 
         $product = $basketItem->getFieldValues();
         $mxResult = \CCatalogSku::GetProductInfo($product["PRODUCT_ID"]);
+        $productId = ($mxResult ? $mxResult['ID'] : $product["PRODUCT_ID"]);
 
-        if (is_array($mxResult)) {
-            $productId = $mxResult['ID'];
-            $iBlock = $this->getIblockElement($productId);
-            $propertyId = isset($iBlock["PROPS"][$propIdent])
-            && isset($iBlock["PROPS"][$propIdent]["VALUES"][0]["VALUE"]) ?
-                $iBlock["PROPS"][$propIdent]["VALUES"][0]["VALUE"] : false;
+        $iBlock = $this->getIblockElement($productId);
+        $propertyId = isset($iBlock["PROPS"][$propIdent])
+        && isset($iBlock["PROPS"][$propIdent]["VALUES"][0]["VALUE"]) ?
+            $iBlock["PROPS"][$propIdent]["VALUES"][0]["VALUE"] : false;
 
-            $properties = \CIBlockProperty::GetList(
-                array("sort" => "asc", "name" => "asc"),
-                array("ACTIVE" => "Y", "CODE" => $propIdent, "PROPERTY_TYPE" => "L", "IBLOCK_ID" => $mxResult["IBLOCK_ID"] )
-            ); //
-            while ($ob = $properties->GetNext()) {
-                $ibpenum = new \CIBlockPropertyEnum;
-                $enum = $ibpenum->GetList(array("sort" => "asc", "name" => "asc"), array("ID" => $propertyId)); //
-                while ($en = $enum->GetNext()) {
-                    $result = $en["XML_ID"];
-                    break;
-                }; //
+        $properties = \CIBlockProperty::GetList(
+            array("sort" => "asc", "name" => "asc"),
+            array(
+                "ACTIVE" => "Y",
+                "CODE" => $propIdent,
+                "PROPERTY_TYPE" => "L",
+                "IBLOCK_ID" => ($mxResult ? $mxResult["IBLOCK_ID"] : $iBlock["IBLOCK_ID"])
+            )
+        ); //
+
+        while ($ob = $properties->GetNext()) {
+            $ibpenum = new \CIBlockPropertyEnum;
+            $enum = $ibpenum->GetList(array("sort" => "asc", "name" => "asc"), array("ID" => $propertyId)); //
+            while ($en = $enum->GetNext()) {
+                $result = $en["XML_ID"];
+                break;
             }; //
         }; //
 
@@ -315,7 +319,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             $basketField = $basketItem->getFields();
 
             $objectType = $this->getBasketItemProductPropValue($basketItem, self::OBJECT_TYPE_FIELD);
-	    $objectType = ($objectType ? $objectType : ($extraParams['INVOICEBOX_TYPE_BASKET'] ?? 'commodity'));
+            $objectType = ($objectType ? $objectType : ($extraParams['INVOICEBOX_TYPE_BASKET'] ?? 'commodity'));
 
             if ($extraParams['INVOICEBOX_VAT_RATE_BASKET'] == 'SETTINGS_BASKET') {
                 $arDataWithVAT = self::getVATData($basketItem, 'product');
