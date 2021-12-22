@@ -41,6 +41,7 @@ $arTypeVAT = [
 ];
 
 $arTypePerson = [
+    'order' => Loc::getMessage('SALE_HPS_INVOICEBOX_BUYER_TYPE_ORDER'),
     'private' => Loc::getMessage('SALE_HPS_INVOICEBOX_BUYER_TYPE_PRIVATE'),
     'legal' => Loc::getMessage('SALE_HPS_INVOICEBOX_BUYER_TYPE_LEGAL'),
 ];

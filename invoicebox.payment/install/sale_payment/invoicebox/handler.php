@@ -19,7 +19,7 @@ Loc::loadMessages(__FILE__);
 
 class InvoiceBoxHandler extends PaySystem\ServiceHandler
 {
-    const VERSION = '2.0.7';
+    const VERSION = '2.0.8';
     const VERSION_UNKNOWN = 'unknown';
 
     const PAYMENT_VERSION_2 = 'version_2';
@@ -32,6 +32,12 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     const STATUS_CREATED = 'created';
     const STATUS_CANCELED = 'canceled';
     const STATUS_COMPLETED = 'completed';
+
+    const PERSON_TYPE_ORDER = 'order';
+    const PERSON_TYPE_PRIVATEID = 1;
+    const PERSON_TYPE_PRIVATE = 'private';
+    const PERSON_TYPE_LEGALID = 2;
+    const PERSON_TYPE_LEGAL = 'legal';
 
     const OBJECT_TYPE_FIELD = 'IB_OBJECT_TYPE';
 
@@ -130,7 +136,24 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
 
         /** @var \Bitrix\Sale\Order $order */
         $order = $paymentCollection->getOrder();
-        $extraParams["ORDER_PERSONAL_TYPE"] = $this->getBusinessValue($payment, 'BUYER_TYPE') ?: 'private';
+
+        $extraParams["ORDER_PERSONAL_TYPE"] = $this->getBusinessValue(
+            $payment,
+            'BUYER_TYPE'
+        ) ?: self::PERSON_TYPE_PRIVATE;
+        if ($extraParams["ORDER_PERSONAL_TYPE"] == self::PERSON_TYPE_ORDER) {
+            switch ($order->getField("PERSON_TYPE_ID")) {
+                case self::PERSON_TYPE_PRIVATEID:
+                    $extraParams["ORDER_PERSONAL_TYPE"] = self::PERSON_TYPE_PRIVATE;
+                    break;
+                case self::PERSON_TYPE_LEGALID:
+                    $extraParams["ORDER_PERSONAL_TYPE"] = self::PERSON_TYPE_LEGAL;
+                    break;
+                default:
+                    $extraParams["ORDER_PERSONAL_TYPE"] = self::PERSON_TYPE_PRIVATE;
+                    break;
+            } //
+        } //
 
         $extraParams["SUCCESS_PAY"] = $this->successPay($payment, $order);
         $extraParams["ORDER"] = print_r($order, 1);
@@ -201,7 +224,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             ) : self::VERSION_UNKNOWN) . ' (Invoicebox ' . self::VERSION . ')';
     }
 
-    public static function getIblockElement($iblockElementId)
+    public static function getIblockElement($iblockElementId): array
     {
         $arOrder = [];
         $arFilter = ['ID' => $iblockElementId];
@@ -261,8 +284,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         $productId = ($mxResult ? $mxResult['ID'] : $product["PRODUCT_ID"]);
 
         $iBlock = $this->getIblockElement($productId);
-        $propertyId = isset($iBlock["PROPS"][$propIdent])
-        && isset($iBlock["PROPS"][$propIdent]["VALUES"][0]["VALUE"]) ?
+        $propertyId = isset($iBlock["PROPS"][$propIdent], $iBlock["PROPS"][$propIdent]["VALUES"][0]["VALUE"]) ?
             $iBlock["PROPS"][$propIdent]["VALUES"][0]["VALUE"] : false;
 
         $properties = \CIBlockProperty::GetList(
@@ -281,8 +303,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             while ($en = $enum->GetNext()) {
                 $result = $en["XML_ID"];
                 break;
-            }; //
-        }; //
+            } //
+        } //
 
         return $result;
     }
@@ -319,7 +341,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             $basketField = $basketItem->getFields();
 
             $objectType = $this->getBasketItemProductPropValue($basketItem, self::OBJECT_TYPE_FIELD);
-            $objectType = ($objectType ? $objectType : ($extraParams['INVOICEBOX_TYPE_BASKET'] ?? 'commodity'));
+            $objectType = ($objectType ?: ($extraParams['INVOICEBOX_TYPE_BASKET'] ?? 'commodity'));
 
             if ($extraParams['INVOICEBOX_VAT_RATE_BASKET'] == 'SETTINGS_BASKET') {
                 $arDataWithVAT = self::getVATData($basketItem, 'product');
@@ -382,6 +404,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                     ],
                     $arDataWithVAT
                 );
+
                 $totalVat += $arDataWithVAT['totalVatAmount'];
                 $totalAmount += $amount;
             }
