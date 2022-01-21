@@ -137,12 +137,13 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         /** @var \Bitrix\Sale\Order $order */
         $order = $paymentCollection->getOrder();
 
+        $extraParams["ORDER_PERSONAL_TYPE_ID"] = $order->getField("PERSON_TYPE_ID");
         $extraParams["ORDER_PERSONAL_TYPE"] = $this->getBusinessValue(
             $payment,
             'BUYER_TYPE'
-        ) ?: self::PERSON_TYPE_PRIVATE;
+        ) ?: self::PERSON_TYPE_ORDER;
         if ($extraParams["ORDER_PERSONAL_TYPE"] == self::PERSON_TYPE_ORDER) {
-            switch ($order->getField("PERSON_TYPE_ID")) {
+            switch ($extraParams["ORDER_PERSONAL_TYPE_ID"]) {
                 case self::PERSON_TYPE_PRIVATEID:
                     $extraParams["ORDER_PERSONAL_TYPE"] = self::PERSON_TYPE_PRIVATE;
                     break;
@@ -272,7 +273,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         return $element;
     }
 
-    public function getBasketItemProductPropValue($basketItem, $propIdent)
+    public function getBasketItemProductPropValue($basketItem, $propIdent): string
     {
         \Bitrix\Main\Loader::IncludeModule("catalog");
         \Bitrix\Main\Loader::IncludeModule("iblock");
@@ -630,7 +631,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             "description" => htmlspecialcharsbx($params['INVOICEBOX_ORDERDESCR'] . " (#" . $params['ORDERID'] . ")"),
             "expirationDate" => FormatDate("c", time() + (86400 * 7)),
             "customer" => [
-                'type' => $params['ORDER_PERSONAL_TYPE'] ?: 'private',
+                'type' => $params['ORDER_PERSONAL_TYPE'] ?: self::PERSON_TYPE_PRIVATE,
                 'name' => $params['BUYER_PERSON_NAME'] ?? '',
                 'email' => $params['BUYER_PERSON_EMAIL'] ?? '',
                 'phone' => $params['BUYER_PERSON_PHONE'] ?? '',

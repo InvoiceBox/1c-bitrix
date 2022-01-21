@@ -25,7 +25,7 @@ Loc::loadMessages(__FILE__);
            value="<?= htmlspecialcharsbx($params["PAYMENT_CURRENCY"]) ?>"/>
     <input type="hidden" name="itransfer_order_description"
            value="<?= htmlspecialcharsbx($params['INVOICEBOX_ORDERDESCR'] . " (#" . $params['ORDERID'] . ")"); ?>"/>
-    <input type="hidden" name="itransfer_body_type" value="<?= htmlspecialcharsbx($params['ORDER_PERSONAL_TYPE']) ?>"/>
+    <input type="hidden" name="itransfer_body_type" value="<?= htmlspecialcharsbx($params['ORDER_PERSONAL_TYPE']) ?>" data-id="<?= htmlspecialcharsbx($params['ORDER_PERSONAL_TYPE_ID']) ?>" />
     <input type="hidden" name="itransfer_person_name" value="<?= htmlspecialcharsbx($params["BUYER_PERSON_NAME"]) ?>"/>
     <input type="hidden" name="itransfer_organization_tin" value="<?= htmlspecialcharsbx($params["BUYER_PERSON_INN"]) ?>"/>
     <input type="hidden" name="itransfer_organization_yaddress" value="<?= htmlspecialcharsbx($params["BUYER_PERSON_ADDRESS"]) ?>"/>
