@@ -9,8 +9,8 @@ require_once($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_be
 
 \CModule::IncludeModule('sale');
 
-use \Bitrix\Main\Application;
-use \Bitrix\Sale\PaySystem;
+use Bitrix\Main\Application;
+use Bitrix\Sale\PaySystem;
 use Bitrix\Main\Localization\Loc;
 
 global $APPLICATION;

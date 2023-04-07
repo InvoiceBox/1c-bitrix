@@ -19,7 +19,7 @@ Loc::loadMessages(__FILE__);
 
 class InvoiceBoxHandler extends PaySystem\ServiceHandler
 {
-    const VERSION = '2.0.8';
+    const VERSION = '2.0.10';
     const VERSION_UNKNOWN = 'unknown';
 
     const PAYMENT_VERSION_2 = 'version_2';
@@ -69,6 +69,20 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     const VATRATE_10 = 2;
     const VATRATE_20 = 1;
 
+
+    protected function parentMethodExists($object, $method)
+    {
+        foreach(class_parents($object) as $parent)
+        {
+            if(method_exists($parent,$method))
+            {
+               return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * @param Payment $payment
      * @param Request|null $request
@@ -92,7 +106,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         }
 
         $extraParams = array();
-        if (method_exists(parent, "getPreparedParams")) {
+        if (parentMethodExists($this, "getPreparedParams")) {
             $extraParams = parent::getPreparedParams($payment, $request);
         }
 
@@ -581,7 +595,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         if (PHP_VERSION >= 70100) {
             ini_set('serialize_precision', -1);
         }
-        return Json::encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_IGNOR);
+        return Json::encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_IGNORE);
     }
 
     /**
@@ -1012,21 +1026,6 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         }
 
         return false;
-    }
-
-    /**
-     * @return \string[][]
-     */
-    protected function getUrlList()
-    {
-        return [
-            self::PAYMENT_VERSION_2 => [
-                self::ACTIVE_URL => self::URL_v2
-            ],
-            self::PAYMENT_VERSION_3 => [
-                self::ACTIVE_URL => self::URL_v3
-            ]
-        ];
     }
 
     /**

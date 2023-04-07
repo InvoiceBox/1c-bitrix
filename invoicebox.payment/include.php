@@ -8,7 +8,7 @@ class CInvoicebox
 {
     function OnBuildGlobalMenu(&$aGlobalMenu, &$aModuleMenu)
     {
-        $MODULE_ID = basename(dirname(__FILE__));
+        $MODULE_ID = basename(__DIR__);
         $aMenu = array(
             "parent_menu" => "global_menu_settings",
             "section" => $MODULE_ID,
@@ -23,7 +23,7 @@ class CInvoicebox
             "items" => array()
         );
 
-        if (file_exists($path = dirname(__FILE__) . '/admin')) {
+        if (file_exists($path = __DIR__ . '/admin')) {
             if ($dir = opendir($path)) {
                 $arFiles = array();
                 while (false !== $item = readdir($dir)) {
@@ -66,5 +66,3 @@ class CInvoicebox
     }
 
 }
-
-; //class

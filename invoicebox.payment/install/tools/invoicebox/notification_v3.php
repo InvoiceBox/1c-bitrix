@@ -9,10 +9,10 @@ require_once($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_be
 
 \CModule::IncludeModule('sale');
 
-use \Bitrix\Main\Application;
-use \Bitrix\Sale\PaySystem;
+use Bitrix\Main\Application;
+use Bitrix\Sale\PaySystem;
 use Bitrix\Main\Localization\Loc;
-use \Bitrix\Main\Web\Json;
+use Bitrix\Main\Web\Json;
 
 global $APPLICATION;
 Loc::loadMessages(__FILE__);
@@ -57,6 +57,8 @@ $APPLICATION->RestartBuffer();
 if ( $userAgent )
 {
 	Header("User-Agent: " . $userAgent);
-}; //
+} //
+
 $APPLICATION->FinalActions(json_encode($arAnswer,JSON_HEX_TAG | JSON_UNESCAPED_UNICODE));
+
 die();

@@ -1,6 +1,6 @@
 <?php
 
-if (IsModuleInstalled('invoicebox.payment')) {
+if (IsModuleInstalled('invoicebox.payment') && isset($updater)) {
     RegisterModuleDependences(
         'sale',
         'OnGetBusinessValueGroups',
