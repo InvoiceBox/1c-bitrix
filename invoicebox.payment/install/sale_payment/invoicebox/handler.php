@@ -19,7 +19,7 @@ Loc::loadMessages(__FILE__);
 
 class InvoiceBoxHandler extends PaySystem\ServiceHandler
 {
-    const VERSION = '2.0.10';
+    const VERSION = '2.0.12';
     const VERSION_UNKNOWN = 'unknown';
 
     const PAYMENT_VERSION_2 = 'version_2';
@@ -105,8 +105,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             );
         }
 
-        $extraParams = array();
-        if (parentMethodExists($this, "getPreparedParams")) {
+        $extraParams = [];
+        if ($this->parentMethodExists($this, "getPreparedParams")) {
             $extraParams = parent::getPreparedParams($payment, $request);
         }
 
@@ -262,7 +262,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             $iblockElementId,
             "sort",
             "asc",
-            array(">ID" => 1)
+            [">ID" => 1]
         );
 
         $i = 0;
@@ -303,18 +303,18 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             $iBlock["PROPS"][$propIdent]["VALUES"][0]["VALUE"] : false;
 
         $properties = \CIBlockProperty::GetList(
-            array("sort" => "asc", "name" => "asc"),
-            array(
+            ["sort" => "asc", "name" => "asc"],
+            [
                 "ACTIVE" => "Y",
                 "CODE" => $propIdent,
                 "PROPERTY_TYPE" => "L",
                 "IBLOCK_ID" => ($mxResult ? $mxResult["IBLOCK_ID"] : $iBlock["IBLOCK_ID"])
-            )
+            ]
         ); //
 
         while ($ob = $properties->GetNext()) {
             $ibpenum = new \CIBlockPropertyEnum;
-            $enum = $ibpenum->GetList(array("sort" => "asc", "name" => "asc"), array("ID" => $propertyId)); //
+            $enum = $ibpenum->GetList(["sort" => "asc", "name" => "asc"], ["ID" => $propertyId]); //
             while ($en = $enum->GetNext()) {
                 $result = $en["XML_ID"];
                 break;
@@ -335,14 +335,14 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         $extraParams["BASKET_ITEMS"] = $order->getBasket();
         $extraParams["DELIVERY_PRICE"] = $order->getDeliveryPrice();
 
-        $shipmentRes = \Bitrix\Sale\Shipment::getList(array(
-                                                          'select' => array('ID',),
-                                                          'filter' => array(
+        $shipmentRes = \Bitrix\Sale\Shipment::getList([
+                                                          'select' => ['ID',],
+                                                          'filter' => [
                                                               'ORDER_ID' => $extraParams["ORDERID"]
-                                                          ),
-                                                          'order' => array('ID' => 'DESC'),
+                                                          ],
+                                                          'order' => ['ID' => 'DESC'],
                                                           'limit' => 1
-                                                      ))->fetch();
+                                                      ])->fetch();
         $shipmentCollection = $order->getShipmentCollection();
         $shipment = $shipmentCollection->getItemById($shipmentRes["ID"]);
         $extraParams["DELIVERY_NAME"] = $shipment->getDeliveryName() ?: '';
@@ -488,13 +488,13 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             );
         }
 
-        $result->setPsData(array('PS_INVOICE_ID' => $paymentData['id']));
+        $result->setPsData(['PS_INVOICE_ID' => $paymentData['id']]);
 
-        $params = array(
+        $params = [
             'URL' => $paymentData['paymentUrl'],
             'PAYMENT_CURRENCY' => $payment->getField('CURRENCY'),
             'SUM' => PriceMaths::roundPrecision($payment->getSum()),
-        );
+        ];
         $this->setExtraParams($params);
 
         $showTemplateResult = $this->showTemplate($payment, 'template_v3');
@@ -542,7 +542,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      * @return PaySystem\ServiceResult
      * @throws Main\ArgumentException
      */
-    private function send($url, array $headers, array $params = array())
+    private function send($url, array $headers, array $params = [])
     {
         $result = new PaySystem\ServiceResult();
 
@@ -786,7 +786,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      */
     public static function getIndicativeFields()
     {
-        return array(
+        return [
             "participantId",
             "participantOrderId",
             "ucode",
@@ -798,7 +798,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             "agentPointName",
             "testMode",
             "sign"
-        );
+        ];
     }
 
     /**
@@ -1042,12 +1042,10 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             return $this->processNoticeAction($payment, $request, $version);
         }
 
-        PaySystem\ErrorLog::add(
-            array(
-                'ACTION' => 'processRequest',
-                'MESSAGE' => 'Incorrect sign'
-            )
-        );
+        PaySystem\ErrorLog::add([
+            'ACTION' => 'processRequest',
+            'MESSAGE' => 'Incorrect sign'
+        ]);
         $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['sign']));
 
         return $result;
@@ -1108,24 +1106,20 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
 
         // Check payment status
         if (!$bPay) {
-            PaySystem\ErrorLog::add(
-                array(
-                    'ACTION' => 'processNoticeAction',
-                    'MESSAGE' => 'Unknown order status'
-                )
-            );
+            PaySystem\ErrorLog::add([
+                'ACTION' => 'processNoticeAction',
+                'MESSAGE' => 'Unknown order status'
+            ]);
             $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['not_found']));
             return $result;
         }
 
         // Check amount
         if (!$this->isCorrectSum($payment, $amount)) {
-            PaySystem\ErrorLog::add(
-                array(
-                    'ACTION' => 'processNoticeAction',
-                    'MESSAGE' => 'Incorrect payment amount (' . $amount . ')'
-                )
-            );
+            PaySystem\ErrorLog::add([
+                'ACTION' => 'processNoticeAction',
+                'MESSAGE' => 'Incorrect payment amount (' . $amount . ')'
+            ]);
             $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['amount']));
             return $result;
         }
@@ -1143,7 +1137,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             return $result;
         }
 
-        $fields = array(
+        $fields = [
             "PS_STATUS" => "Y",
             "PS_STATUS_CODE" => "-",
             "PS_STATUS_DESCRIPTION" => $psStatusDescription,
@@ -1151,7 +1145,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             "PS_SUM" => $amount,
             "PS_CURRENCY" => $currency,
             "PS_RESPONSE_DATE" => new DateTime(),
-        );
+        ];
 
         $result->setPsData($fields);
         $result->setOperationType(PaySystem\ServiceResult::MONEY_COMING);
@@ -1173,7 +1167,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      */
     public function getCurrencyList()
     {
-        return array('RUB');
+        return ['RUB'];
     }
 
     /**
@@ -1196,9 +1190,9 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      */
     public static function getHandlerModeList()
     {
-        return array(
+        return [
             static::PAYMENT_VERSION_2 => Loc::getMessage('SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOCOL_2'),
             static::PAYMENT_VERSION_3 => Loc::getMessage('SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOCOL_3'),
-        );
+        ];
     }
 }

@@ -9,7 +9,7 @@ class CInvoicebox
     function OnBuildGlobalMenu(&$aGlobalMenu, &$aModuleMenu)
     {
         $MODULE_ID = basename(__DIR__);
-        $aMenu = array(
+        $aMenu = [
             "parent_menu" => "global_menu_settings",
             "section" => $MODULE_ID,
             "sort" => 50,
@@ -19,15 +19,15 @@ class CInvoicebox
             "icon" => "",
             "page_icon" => "",
             "items_id" => $MODULE_ID . "_items",
-            "more_url" => array(),
-            "items" => array()
-        );
+            "more_url" => [],
+            "items" => []
+        ];
 
         if (file_exists($path = __DIR__ . '/admin')) {
             if ($dir = opendir($path)) {
-                $arFiles = array();
+                $arFiles = [];
                 while (false !== $item = readdir($dir)) {
-                    if (in_array($item, array('.', '..', 'menu.php'))) {
+                    if (in_array($item, ['.', '..', 'menu.php'])) {
                         continue;
                     }
                     if (!file_exists($file = $_SERVER['DOCUMENT_ROOT'] . '/bitrix/admin/' . $MODULE_ID . '_' . $item)) {
@@ -40,12 +40,12 @@ class CInvoicebox
                 }
                 sort($arFiles);
                 foreach ($arFiles as $item) {
-                    $aMenu['items'][] = array(
+                    $aMenu['items'][] = [
                         'text' => $item,
                         'url' => $MODULE_ID . '_' . $item,
                         'module_id' => $MODULE_ID,
                         "title" => "",
-                    );
+                    ];
                 }
             }
         }

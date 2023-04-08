@@ -27,7 +27,7 @@ class invoicebox_payment extends CModule
     function __construct()
     {
         global $APPLICATION;
-        $arModuleVersion = array();
+        $arModuleVersion = [];
         include(__DIR__ . "/version.php");
         $this->MODULE_VERSION = $arModuleVersion["VERSION"];
         $this->MODULE_VERSION_DATE = $arModuleVersion["VERSION_DATE"];
@@ -94,20 +94,20 @@ class invoicebox_payment extends CModule
 
         while ($arIBlock = $rsIBlockList->fetch()) {
             $property = \CIBlockProperty::GetList(
-                array("sort" => "asc", "name" => "asc"),
-                array(
+                ["sort" => "asc", "name" => "asc"],
+                [
                     "ACTIVE" => "Y",
                     "CODE" => self::IB_OBJECT_TYPE,
                     "PROPERTY_TYPE" => "L",
                     "IBLOCK_ID" => $arIBlock["ID"]
-                )
+                ]
             ); //
 
             if (!$property->SelectedRowsCount()) {
                 $fieldName = Loc::getMessage('SALE_HPS_INVOICEBOX_OBJECT_TYPE');
                 $fieldHint = Loc::getMessage('SALE_HPS_INVOICEBOX_OBJECT_TYPE_HINT');
 
-                $arFields = array(
+                $arFields = [
                     "NAME" => $fieldName,
                     "HINT" => $fieldHint,
                     "ACTIVE" => "Y",
@@ -116,7 +116,7 @@ class invoicebox_payment extends CModule
                     "CODE" => self::IB_OBJECT_TYPE,
                     "PROPERTY_TYPE" => "L",
                     "IBLOCK_ID" => $arIBlock["ID"]
-                );
+                ];
                 $ibp = new \CIBlockProperty;
                 $propetryId = $ibp->Add($arFields);
             } else {
@@ -127,18 +127,16 @@ class invoicebox_payment extends CModule
             $ibpenum = new \CIBlockPropertyEnum;
             foreach ($enumList as $_xmlId => $_name) {
                 $enum = $ibpenum->GetList(
-                    array("sort" => "asc", "name" => "asc"),
-                    array("ID" => $propetryId, "XML_ID" => $_xmlId)
+                    ["sort" => "asc", "name" => "asc"],
+                    ["ID" => $propetryId, "XML_ID" => $_xmlId]
                 ); //
                 if (!$enum->SelectedRowsCount()) {
-                    $ibpenum->Add(
-                        array(
-                            "IBLOCK_ID" => $arIBlock["ID"],
-                            "PROPERTY_ID" => $propetryId,
-                            "VALUE" => $_name,
-                            "XML_ID" => $_xmlId
-                        )
-                    );
+                    $ibpenum->Add([
+                        "IBLOCK_ID" => $arIBlock["ID"],
+                        "PROPERTY_ID" => $propetryId,
+                        "VALUE" => $_name,
+                        "XML_ID" => $_xmlId
+                    ]);
                 } //
             } //enumList
         } //arIBlock
@@ -159,7 +157,7 @@ class invoicebox_payment extends CModule
      * Install main files
      * @return boolean
      */
-    public function InstallFiles($arParams = array(), $alternativePath = false): bool
+    public function InstallFiles($arParams = [], $alternativePath = false): bool
     {
         global $APPLICATION;
         $countErr = 0;
