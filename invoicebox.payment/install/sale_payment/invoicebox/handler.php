@@ -69,12 +69,11 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     const VATRATE_10 = 2;
     const VATRATE_20 = 1;
 
-
     protected function parentMethodExists($object, $method)
     {
-        foreach(class_parents($object) as $parent)
+        foreach (class_parents($object) as $parent)
         {
-            if(method_exists($parent,$method))
+            if (method_exists($parent, $method))
             {
                return true;
             }
@@ -1064,6 +1063,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         $orderCurrency = 'RUB';
         $invoiceId = "";
         $psStatusDescription = "";
+        $currency = "";
+        $bPay = false;
 
         switch ($version) {
             case self::PAYMENT_VERSION_2:
@@ -1126,7 +1127,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
 
         // Check currency
         // ToDo: check order/payment currency
-        if ($currency != $orderCurrency) {
+        if ($currency !== $orderCurrency) {
             $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['currency']));
             return $result;
         }
