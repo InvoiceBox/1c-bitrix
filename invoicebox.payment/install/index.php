@@ -85,12 +85,12 @@ class invoicebox_payment extends CModule
 
         $enumList = [
             "commodity" => Loc::getMessage('SALE_HPS_INVOICEBOX_OBJECT_TYPE_1'),
-            "service" => Loc::getMessage('SALE_HPS_INVOICEBOX_OBJECT_TYPE_4')
+            "service" => Loc::getMessage('SALE_HPS_INVOICEBOX_OBJECT_TYPE_4'),
         ]; //
 
         $rsIBlockList = Iblock\IblockTable::getList([
-                                                        'filter' => ['=ACTIVE' => 'Y', 'IBLOCK_TYPE_ID' => 'catalog']
-                                                    ]);
+            'filter' => ['=ACTIVE' => 'Y', 'IBLOCK_TYPE_ID' => 'catalog']
+        ]);
 
         while ($arIBlock = $rsIBlockList->fetch()) {
             $property = \CIBlockProperty::GetList(
@@ -115,7 +115,7 @@ class invoicebox_payment extends CModule
                     "SORT" => "101",
                     "CODE" => self::IB_OBJECT_TYPE,
                     "PROPERTY_TYPE" => "L",
-                    "IBLOCK_ID" => $arIBlock["ID"]
+                    "IBLOCK_ID" => $arIBlock["ID"],
                 ];
                 $ibp = new \CIBlockProperty;
                 $propetryId = $ibp->Add($arFields);
@@ -128,14 +128,14 @@ class invoicebox_payment extends CModule
             foreach ($enumList as $_xmlId => $_name) {
                 $enum = $ibpenum->GetList(
                     ["sort" => "asc", "name" => "asc"],
-                    ["ID" => $propetryId, "XML_ID" => $_xmlId]
+                    ["PROPERTY_ID" => $propetryId, "XML_ID" => $_xmlId]
                 ); //
                 if (!$enum->SelectedRowsCount()) {
                     $ibpenum->Add([
                         "IBLOCK_ID" => $arIBlock["ID"],
                         "PROPERTY_ID" => $propetryId,
                         "VALUE" => $_name,
-                        "XML_ID" => $_xmlId
+                        "XML_ID" => $_xmlId,
                     ]);
                 } //
             } //enumList

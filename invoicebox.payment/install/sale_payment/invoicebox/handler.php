@@ -19,14 +19,20 @@ Loc::loadMessages(__FILE__);
 
 class InvoiceBoxHandler extends PaySystem\ServiceHandler
 {
-    const VERSION = '2.0.12';
+    const VERSION = '2.0.13';
     const VERSION_UNKNOWN = 'unknown';
 
     const PAYMENT_VERSION_2 = 'version_2';
     const URL_v2 = 'https://go.invoicebox.ru/module_inbox_auto.u';
 
+    const PAYMENT_VERSION_23 = 'version_23';
+    const URL_v23 = 'https://api.invoicebox.ru/l3/';
+
     const PAYMENT_VERSION_3 = 'version_3';
     const URL_v3 = 'https://api.invoicebox.ru/v3/';
+
+    const TEST_URL = 'test';
+    const ACTIVE_URL = 'active';
 
     const URL_CREATE_ORDER = 'billing/api/order/order';
     const STATUS_CREATED = 'created';
@@ -120,6 +126,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                     'INVOICEBOX_RETURN_URL_NOTIFY_2'
                 );
                 break;
+            case self::PAYMENT_VERSION_23:
             case self::PAYMENT_VERSION_3:
                 $extraParams["INVOICEBOX_MERCHANT_ID"] = $this->getBusinessValue(
                     $payment,
@@ -238,7 +245,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             ) : self::VERSION_UNKNOWN) . ' (Invoicebox ' . self::VERSION . ')';
     }
 
-    public static function getIblockElement($iblockElementId): array
+    public function getIblockElement($iblockElementId): array
     {
         $arOrder = [];
         $arFilter = ['ID' => $iblockElementId];
@@ -375,8 +382,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                     'measure' => $basketField['MEASURE_NAME'] ?: Loc::getMessage('MEASURE_NAME_DEFAULT'),
                     'measureCode' => (string)$basketField['MEASURE_CODE'] ?: Loc::getMessage('MEASURE_CODE_DEFAULT'),
                     'quantity' => (float)$basketField['QUANTITY'],
-                    'amount' => number_format((float)roundEx($basketItem->getPrice(), 2), 2, '.', ''),
-                    'totalAmount' => $amount,
+                    'amount' => (float)number_format((float)roundEx($basketItem->getPrice(), 2), 2, '.', ''),
+                    'totalAmount' => (float)$amount,
                     'type' => $objectType,
                     'paymentType' => $extraParams['INVOICEBOX_PAYMENT_TYPE'] ?? 'full_prepayment',
                 ],
@@ -411,8 +418,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                         'measure' => Loc::getMessage('MEASURE_NAME_DEFAULT'),
                         'measureCode' => (string)Loc::getMessage('MEASURE_CODE_DEFAULT'),
                         'quantity' => 1,
-                        'amount' => $amount,
-                        'totalAmount' => $amount,
+                        'amount' => (float)$amount,
+                        'totalAmount' => (float)$amount,
                         'type' => $extraParams['INVOICEBOX_TYPE_DELIVERY'] ?? 'service',
                         'paymentType' => $extraParams['INVOICEBOX_PAYMENT_TYPE'] ?? 'full_prepayment',
                     ],
@@ -451,6 +458,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         switch ($version) {
             case self::PAYMENT_VERSION_2:
                 return $this->showTemplate($payment, "template");
+            case self::PAYMENT_VERSION_23:
             case self::PAYMENT_VERSION_3:
                 if ($request === null) {
                     $request = Context::getCurrent()->getRequest();
@@ -928,6 +936,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
 
                 return false;
                 break;
+            case self::PAYMENT_VERSION_23:
             case self::PAYMENT_VERSION_3:
                 $inputStream = static::readFromStream();
                 $apiKey = $this->getBusinessValue($payment, 'INVOICEBOX_NOTIFICATION_TOKEN_V3');
@@ -986,8 +995,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     private function isPaidByOther(Payment $payment): bool
     {
         if ($payment->isPaid() && $this->service->getField('PAY_SYSTEM_ID') !== $payment->getPaySystem()) {
-            CEventLog::Add(
-                [
+            CEventLog::Add([
                     'SEVERITY' => 'INFO',
                     'AUDIT_TYPE_ID' => 'INVOICE_PAYMENT_LOG',
                     'MODULE_ID' => 'invoicebox.payment',
@@ -997,8 +1005,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                         ],
                         JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
                     ),
-                ]
-            );
+            ]);
             return true;
         }
         return false;
@@ -1084,6 +1091,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                 $currency = $request->get('currency');
                 $bPay = true;
                 break;
+            case self::PAYMENT_VERSION_23:
             case self::PAYMENT_VERSION_3:
                 $inputStream = static::readFromStream();
                 $data = static::decode($inputStream);
@@ -1172,6 +1180,27 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     }
 
     /**
+     * @return array
+     */
+    public function getUrlList()
+    {
+        return [
+            self::PAYMENT_VERSION_2 => [
+                self::ACTIVE_URL => self::URL_v2,
+                self::TEST_URL => self::URL_v2,
+            ],
+            self::PAYMENT_VERSION_23 => [
+                self::ACTIVE_URL => self::URL_v23,
+                self::TEST_URL => self::URL_v23,
+            ],
+            self::PAYMENT_VERSION_3 => [
+                self::ACTIVE_URL => self::URL_v3,
+                self::TEST_URL => self::URL_v3,
+            ],
+        ]; //
+    } //
+
+    /**
      * @param PaySystem\ServiceResult $result
      * @param Request $request
      * @return mixed
@@ -1192,8 +1221,9 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     public static function getHandlerModeList()
     {
         return [
-            static::PAYMENT_VERSION_2 => Loc::getMessage('SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOCOL_2'),
-            static::PAYMENT_VERSION_3 => Loc::getMessage('SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOCOL_3'),
+            self::PAYMENT_VERSION_2 => Loc::getMessage('SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOCOL_2'),
+            self::PAYMENT_VERSION_23 => Loc::getMessage('SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOCOL_23'),
+            self::PAYMENT_VERSION_3 => Loc::getMessage('SALE_HPS_INVOICEBOX_PS_CHANGE_VERSION_PROTOCOL_3'),
         ];
     }
 }

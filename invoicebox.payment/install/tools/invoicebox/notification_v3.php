@@ -7,7 +7,7 @@ define("DisableEventsCheck", true);
 
 require_once($_SERVER["DOCUMENT_ROOT"] . "/bitrix/modules/main/include/prolog_before.php");
 
-\CModule::IncludeModule('sale');
+CModule::IncludeModule('sale');
 
 use Bitrix\Main\Application;
 use Bitrix\Sale\PaySystem;
@@ -31,9 +31,7 @@ if (CModule::IncludeModule("sale")) {
 
         if ($item !== false) {
             $service = new PaySystem\Service($item);
-
             if ($service instanceof PaySystem\Service) {
-		$userAgent = $service->getUserAgent();
                 $result = $service->processRequest($request);
                 if (!$result->isSuccess()) {
                     $arError = $result->getErrorMessages();
@@ -54,11 +52,6 @@ if (CModule::IncludeModule("sale")) {
 }
 
 $APPLICATION->RestartBuffer();
-if ( $userAgent )
-{
-	Header("User-Agent: " . $userAgent);
-} //
-
 $APPLICATION->FinalActions(json_encode($arAnswer,JSON_HEX_TAG | JSON_UNESCAPED_UNICODE));
 
 die();
