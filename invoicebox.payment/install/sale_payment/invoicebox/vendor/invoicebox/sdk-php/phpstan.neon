@@ -1,0 +1,8 @@
+parameters:
+    phpVersion: 70400
+    parallel:
+        maximumNumberOfProcesses: 3
+    paths:
+        - src
+    tmpDir: var/cache/ecs
+    level: 5

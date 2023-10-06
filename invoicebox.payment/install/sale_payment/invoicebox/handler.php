@@ -15,6 +15,22 @@ use Bitrix\Main\Context;
 use Bitrix\Main\Web\Json;
 use CEventLog;
 
+
+use Invoicebox\Sdk\Client\InvoiceboxClient;
+use Invoicebox\Sdk\DTO\Enum\BasketItemType;
+use Invoicebox\Sdk\DTO\Enum\PaymentType;
+use Invoicebox\Sdk\DTO\Enum\VatCode;
+use Invoicebox\Sdk\DTO\Order\BasketItem;
+use Invoicebox\Sdk\DTO\Order\CreateOrderRequest;
+use Invoicebox\Sdk\DTO\Order\LegalCustomer;
+
+
+require_once 'vendor/autoload.php';
+
+
+
+
+
 Loc::loadMessages(__FILE__);
 
 class InvoiceBoxHandler extends PaySystem\ServiceHandler
@@ -81,7 +97,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         {
             if (method_exists($parent, $method))
             {
-               return true;
+                return true;
             }
         }
 
@@ -94,10 +110,11 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      * @param string $version
      * @return array
      */
+
     protected function getPreparedParams(
         Payment $payment,
         Request $request = null,
-        $version = self::PAYMENT_VERSION_2
+                $version = self::PAYMENT_VERSION_2
     ): array {
         $signatureValue = "";
         if ($version == self::PAYMENT_VERSION_2) {
@@ -214,6 +231,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         if ($registrationAddress = $this->getBusinessValue($payment, 'BUYER_PERSON_REGISTR_ADDRESS')) {
             $extraParams['BUYER_PERSON_ADDRESS'] = $registrationAddress;
         }
+
+
         return $extraParams;
     }
 
@@ -327,6 +346,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             } //
         } //
 
+
+
         return $result;
     }
 
@@ -342,13 +363,13 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         $extraParams["DELIVERY_PRICE"] = $order->getDeliveryPrice();
 
         $shipmentRes = \Bitrix\Sale\Shipment::getList([
-                                                          'select' => ['ID',],
-                                                          'filter' => [
-                                                              'ORDER_ID' => $extraParams["ORDERID"]
-                                                          ],
-                                                          'order' => ['ID' => 'DESC'],
-                                                          'limit' => 1
-                                                      ])->fetch();
+            'select' => ['ID',],
+            'filter' => [
+                'ORDER_ID' => $extraParams["ORDERID"]
+            ],
+            'order' => ['ID' => 'DESC'],
+            'limit' => 1
+        ])->fetch();
         $shipmentCollection = $order->getShipmentCollection();
         $shipment = $shipmentCollection->getItemById($shipmentRes["ID"]);
         $extraParams["DELIVERY_NAME"] = $shipment->getDeliveryName() ?: '';
@@ -431,9 +452,11 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             }
         }
 
+
         $extraParams['BASKET_ITEMS_PREPARED'] = $result;
         $extraParams['BASKET_TOTAL_AMOUNT'] = $totalAmount;
         $extraParams['BASKET_TOTAL_VAT'] = $totalVat;
+
 
         return $result;
     }
@@ -471,6 +494,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
                         );
                     PaySystem\Logger::addError($error);
                 }
+
+
                 return $result;
         }
     }
@@ -478,14 +503,35 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     private function initiatePayInternal(Payment $payment, Request $request, $params)
     {
         $result = new PaySystem\ServiceResult();
+        $version = $this->service->getField('PS_MODE') ?: self::PAYMENT_VERSION_2;
+
 
         $createResult = $this->createInvoicePayment($payment, $request, $params);
+
         if (!$createResult->isSuccess()) {
             $result->addErrors($createResult->getErrors());
             return $result;
         }
-
         $paymentData = $createResult->getData()['data'];
+
+
+
+
+        if($version !== 'version_2') {
+            $createSdkPaymentLink = $this->createSdkPayment($payment, $request, $params);
+            $params = [
+                'URL' => $createSdkPaymentLink,
+                'PAYMENT_CURRENCY' => $payment->getField('CURRENCY'),
+                'SUM' => PriceMaths::roundPrecision($payment->getSum()),
+            ];
+        } else {
+            $params = [
+                'URL' => $paymentData['paymentUrl'],
+                'PAYMENT_CURRENCY' => $payment->getField('CURRENCY'),
+                'SUM' => PriceMaths::roundPrecision($payment->getSum()),
+            ];
+        }
+
 
         if ($paymentData['status'] === static::STATUS_CANCELED) {
             return $result->addError(
@@ -497,11 +543,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
 
         $result->setPsData(['PS_INVOICE_ID' => $paymentData['id']]);
 
-        $params = [
-            'URL' => $paymentData['paymentUrl'],
-            'PAYMENT_CURRENCY' => $payment->getField('CURRENCY'),
-            'SUM' => PriceMaths::roundPrecision($payment->getSum()),
-        ];
+
+
         $this->setExtraParams($params);
 
         $showTemplateResult = $this->showTemplate($payment, 'template_v3');
@@ -520,14 +563,91 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
      * @param $params
      * @return PaySystem\ServiceResult
      */
-    private function createInvoicePayment(Payment $payment, Request $request, $params)
-    {
+
+    public function createSdkPayment(Payment $payment, Request $request, $params) {
         $result = new PaySystem\ServiceResult();
 
         $params['URL'] .= self::URL_CREATE_ORDER;
+        $body = $this->getBodyRequest_v3($payment, array_merge($this->getParamsBusValue($payment), $params));
+        $version = $this->service->getField('PS_MODE') ?: self::PAYMENT_VERSION_2;
 
+        if ($version === 'version_23') {
+            $version = 'l3';
+        } else {
+            $version = null;
+        }
+
+        $client = new InvoiceboxClient(
+
+            $this->getBusinessValue($payment, 'INVOICEBOX_AUTH_TOKEN'),
+            $version,
+            null,
+            null,
+        );
+
+
+        for ($i = 0; $i < count($body['basketItems']); $i++) {
+            $invoiceBasket[] = new BasketItem(
+                $body['basketItems'][$i]['sku'],
+                $body['basketItems'][$i]['name'],
+                $body['basketItems'][$i]['measure'],
+                $body['basketItems'][$i]['measureCode'],
+                $body['basketItems'][$i]['quantity'],
+                $body['basketItems'][$i]['amount'],
+                $body['basketItems'][$i]['amountWoVat'],
+                $body['basketItems'][$i]['totalAmount'],
+                $body['basketItems'][$i]['totalVatAmount'],
+                $body['basketItems'][$i]['vatCode'],
+                $body['basketItems'][$i]['type'],
+                $body['basketItems'][$i]['paymentType']
+            );
+        }
+
+        $customer = new LegalCustomer(
+            $body['customer']['name'],
+            $body['customer']['phone'],
+            $body['customer']['email'],
+            $body['customer']['vatNumber'],
+            $body['customer']['registrationAddress'],
+        );
+
+
+        $req = new CreateOrderRequest(
+            'Номер заказа ' . $body['merchantOrderId'],
+            $body['merchantId'],
+            $body['merchantOrderId'],
+            $body['amount'],
+            $body['vatAmount'],
+            $body['currencyId'],
+            new \DateTime('tomorrow'),
+            $invoiceBasket,
+            $customer,
+            null,
+            null,
+            null,
+            $body['notificationUrl'],
+            $body['successUrl'],
+            $body['failUrl'],
+            $body['returnUrl']
+        );
+
+
+        $res = $client->createOrder($req);
+
+        $payment_url = $res->getPaymentUrl();
+        return $payment_url;
+
+    }
+
+    private function createInvoicePayment(Payment $payment, Request $request, $params)
+    {
+
+        $result = new PaySystem\ServiceResult();
+
+        $params['URL'] .= self::URL_CREATE_ORDER;
         $headers = $this->getHeaders_v3($payment);
         $body = $this->getBodyRequest_v3($payment, array_merge($this->getParamsBusValue($payment), $params));
+
 
         $sendResult = $this->send($params['URL'], $headers, $body);
 
@@ -562,7 +682,6 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         if ($params) {
             $postData = static::encode($params);
         }
-
         if (class_exists('Bitrix\Sale\PaySystem\Logger')) {
             PaySystem\Logger::addDebugInfo('Invoicebox: request data: ' . $postData);
         }
@@ -588,6 +707,8 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         if (class_exists('Bitrix\Sale\PaySystem\Logger')) {
             PaySystem\Logger::addDebugInfo('Invoicebox: response data: ' . $response);
         }
+
+
 
         return $result;
     }
@@ -697,6 +818,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             $arRes['amountWoVat'] = (float)roundEx($item->getPrice() - $item->getVatSum(), 2);
         }
 
+
         return $arRes;
     }
 
@@ -712,7 +834,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
         if ($addType == 'product') {
             $arRes['amountWoVat'] = (float)roundEx($item->getPrice() / (1 + ($rate / 100)), 2);
             $arRes['totalVatAmount'] = (float)roundEx(
-                ($item->getPrice() - $arRes['amountWoVat']) * $item->getQuantity(),
+                $item->getFinalPrice() - ($item->getFinalPrice() / (1 + $rate / 100)),
                 2
             );
         } elseif ($addType == 'delivery') {
@@ -830,9 +952,9 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     public static function isMyResponse(Request $request, $paySystemId)
     {
         $paySystemResult = PaySystem\Manager::getList([
-                                                          'filter' => ['ID' => $paySystemId],
-                                                          'select' => ['PS_MODE']
-                                                      ])->fetch();
+            'filter' => ['ID' => $paySystemId],
+            'select' => ['PS_MODE']
+        ])->fetch();
 
         if (empty($paySystemResult['PS_MODE'])) {
             $paySystemResult['PS_MODE'] = self::PAYMENT_VERSION_2;
@@ -996,15 +1118,15 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
     {
         if ($payment->isPaid() && $this->service->getField('PAY_SYSTEM_ID') !== $payment->getPaySystem()) {
             CEventLog::Add([
-                    'SEVERITY' => 'INFO',
-                    'AUDIT_TYPE_ID' => 'INVOICE_PAYMENT_LOG',
-                    'MODULE_ID' => 'invoicebox.payment',
-                    'DESCRIPTION' => json_encode(
-                        [
-                            'error' => Loc::getMessage('SALE_HPS_INVOICEBOX_LOG_REQUEST_IS_OTHER_PAYMENT_PAYED')
-                        ],
-                        JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
-                    ),
+                'SEVERITY' => 'INFO',
+                'AUDIT_TYPE_ID' => 'INVOICE_PAYMENT_LOG',
+                'MODULE_ID' => 'invoicebox.payment',
+                'DESCRIPTION' => json_encode(
+                    [
+                        'error' => Loc::getMessage('SALE_HPS_INVOICEBOX_LOG_REQUEST_IS_OTHER_PAYMENT_PAYED')
+                    ],
+                    JSON_HEX_TAG | JSON_UNESCAPED_UNICODE
+                ),
             ]);
             return true;
         }
@@ -1053,6 +1175,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
             'MESSAGE' => 'Incorrect sign'
         ]);
         $result->addError(new Error(self::NOTIFICATION_ERROR_CODE['sign']));
+
 
         return $result;
     }
@@ -1158,6 +1281,7 @@ class InvoiceBoxHandler extends PaySystem\ServiceHandler
 
         $result->setPsData($fields);
         $result->setOperationType(PaySystem\ServiceResult::MONEY_COMING);
+
 
         return $result;
     }
